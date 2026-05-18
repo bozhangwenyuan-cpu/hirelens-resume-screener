@@ -1,0 +1,9 @@
+.git
+.codex_prd_tmp
+data
+resume_screener_backend/config.local.json
+resume_screener_backend/*.sqlite3
+resume_screener_backend/__pycache__/
+resume_screener_backend/*.log
+*.pyc
+.env

@@ -1,0 +1,847 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>HireLens 招聘评测工作台</title>
+  <style>
+    :root {
+      --bg: #f5f7fa;
+      --surface: #fff;
+      --subtle: #f8fafc;
+      --ink: #111827;
+      --text: #263241;
+      --muted: #667085;
+      --line: #e4e7ec;
+      --line2: #cfd6df;
+      --brand: #2454c6;
+      --brand-dark: #193f9b;
+      --brand-soft: #eef4ff;
+      --green: #16794f;
+      --green-soft: #e9f7ef;
+      --amber: #a15c07;
+      --amber-soft: #fff4df;
+      --red: #b42318;
+      --red-soft: #fff1f0;
+      --gray-soft: #eef2f6;
+      --radius: 8px;
+      --sidebar: 264px;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--text);
+      background: var(--bg);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+      letter-spacing: 0;
+    }
+    button, input, select, textarea { font: inherit; }
+    button { cursor: pointer; }
+
+    .app { min-height: 100vh; display: grid; grid-template-columns: var(--sidebar) minmax(0, 1fr); transition: grid-template-columns .18s ease; }
+    .app.sidebar-collapsed { grid-template-columns: 76px minmax(0, 1fr); }
+    .sidebar {
+      position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column;
+      background:
+        radial-gradient(circle at 18% 0%, rgba(70, 132, 255, .38), transparent 32%),
+        radial-gradient(circle at 98% 32%, rgba(35, 211, 238, .18), transparent 34%),
+        linear-gradient(180deg, #071528 0%, #0b1024 58%, #090d1b 100%);
+      color: #e5e7eb; border-right: 1px solid rgba(98, 155, 255, .22);
+      box-shadow: inset -1px 0 0 rgba(255,255,255,.04);
+    }
+    .brand { padding: 22px 20px 18px; border-bottom: 1px solid rgba(129, 179, 255, .16); }
+    .brand-mark {
+      width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center;
+      margin-bottom: 12px; border-radius: 8px;
+      background: linear-gradient(135deg, #eaf3ff, #9fe8ff);
+      color: #103c8f; font-weight: 900;
+      box-shadow: 0 0 22px rgba(78, 173, 255, .36);
+    }
+    .brand h1 { margin: 0 0 6px; color: #fff; font-size: 20px; line-height: 1.2; }
+    .brand p { margin: 0; color: #aeb8c7; font-size: 13px; line-height: 1.6; }
+    .app.sidebar-collapsed .brand { padding: 18px 12px; }
+    .app.sidebar-collapsed .brand h1,
+    .app.sidebar-collapsed .brand p,
+    .app.sidebar-collapsed .nav-btn strong,
+    .app.sidebar-collapsed .nav-btn span span,
+    .app.sidebar-collapsed .sidebar-footer { display: none; }
+    .app.sidebar-collapsed .brand-mark { margin: 0 auto; }
+    .nav { padding: 14px 12px; display: grid; gap: 6px; }
+    .nav-btn {
+      width: 100%; min-height: 54px; display: grid; grid-template-columns: 28px 1fr; gap: 10px; align-items: center;
+      padding: 9px 10px; border: 1px solid transparent; border-radius: 8px; color: #cbd5e1; background: transparent; text-align: left;
+    }
+    .app.sidebar-collapsed .nav-btn { grid-template-columns: 1fr; justify-items: center; padding: 10px 8px; }
+    .nav-btn .icon {
+      width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center;
+      border-radius: 6px; background: rgba(112, 165, 255, .12); color: #cce8ff; font-size: 14px; font-weight: 900;
+    }
+    .nav-btn strong { display: block; color: inherit; font-size: 14px; line-height: 1.25; }
+    .nav-btn span span { display: block; margin-top: 2px; color: #94a3b8; font-size: 12px; line-height: 1.3; }
+    .nav-btn.active {
+      color: #fff;
+      border-color: rgba(117, 183, 255, .28);
+      background: linear-gradient(90deg, rgba(42, 102, 255, .32), rgba(28, 205, 236, .12));
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.04), 0 0 24px rgba(48, 113, 255, .16);
+    }
+    .nav-btn.active .icon {
+      color: #fff;
+      background: linear-gradient(135deg, #285dff, #16c4df);
+      box-shadow: 0 0 16px rgba(41, 151, 255, .35);
+    }
+    .sidebar-tools {
+      display: grid;
+      gap: 8px;
+      padding: 14px 12px;
+      border-top: 1px solid rgba(129, 179, 255, .12);
+      border-bottom: 1px solid rgba(129, 179, 255, .12);
+    }
+    .sidebar-tool-btn {
+      width: 100%;
+      height: 36px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      border: 1px solid rgba(117, 183, 255, .24);
+      border-radius: 8px;
+      color: #dbeafe;
+      background: rgba(17, 35, 68, .72);
+      font-size: 13px;
+      font-weight: 900;
+    }
+    .sidebar-tool-btn:hover {
+      background: rgba(36, 84, 198, .34);
+      border-color: rgba(126, 202, 255, .44);
+    }
+    .app.sidebar-collapsed .sidebar-tools { padding: 12px 10px; }
+    .app.sidebar-collapsed .sidebar-tool-text { display: none; }
+    .sidebar-footer { margin-top: auto; padding: 16px; border-top: 1px solid rgba(129, 179, 255, .14); }
+
+    .main { min-width: 0; }
+    .topbar {
+      height: 68px; position: sticky; top: 0; z-index: 5; display: flex; justify-content: space-between; align-items: center; gap: 16px;
+      padding: 0 28px; border-bottom: 1px solid var(--line); background: rgba(255,255,255,.94); backdrop-filter: blur(12px);
+    }
+    .crumb { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 13px; }
+    .crumb strong { color: var(--ink); font-size: 15px; }
+    .content { width: min(1440px, 100%); padding: 24px 28px 36px; }
+    .page { display: none; }
+    .page.active { display: block; }
+    .page-head { display: flex; justify-content: space-between; gap: 20px; align-items: flex-start; margin-bottom: 18px; }
+    .page-title h2 { margin: 0 0 6px; color: var(--ink); font-size: 24px; line-height: 1.22; }
+    .page-title p { margin: 0; max-width: 780px; color: var(--muted); line-height: 1.65; font-size: 14px; }
+
+    .btn {
+      height: 38px; display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 0 13px;
+      border: 1px solid transparent; border-radius: 6px; color: #fff; background: var(--brand); font-size: 13px; font-weight: 900; white-space: nowrap;
+    }
+    .btn:hover { background: var(--brand-dark); }
+    .btn.secondary { color: #344054; border-color: var(--line2); background: #fff; }
+    .btn.secondary:hover { background: #f8fafc; }
+    .btn.ghost { color: var(--brand); border-color: #c7d7fe; background: var(--brand-soft); }
+    .btn.danger { color: var(--red); border-color: #ffd0cc; background: var(--red-soft); }
+    .actions, .top-actions, .toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+
+    .metric-strip { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 16px; }
+    .metric {
+      min-height: 92px; display: flex; flex-direction: column; justify-content: space-between;
+      padding: 16px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface);
+    }
+    .metric span { color: var(--muted); font-size: 13px; font-weight: 700; }
+    .metric strong { color: var(--ink); font-size: 30px; line-height: 1; }
+
+    .panel { border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); overflow: hidden; }
+    .panel-head {
+      min-height: 58px; display: flex; justify-content: space-between; align-items: center; gap: 14px;
+      padding: 14px 16px; border-bottom: 1px solid var(--line); background: var(--subtle);
+    }
+    .panel-head h3 { margin: 0; color: var(--ink); font-size: 16px; line-height: 1.3; }
+    .panel-head p { margin: 4px 0 0; color: var(--muted); font-size: 13px; line-height: 1.5; }
+    .panel-body { padding: 16px; }
+
+    .table-shell { border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; background: #fff; }
+    .table-toolbar {
+      min-height: 56px; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px;
+      border-bottom: 1px solid var(--line); background: #fff;
+    }
+    .table-wrap { overflow-x: auto; }
+    table { width: max-content; min-width: 100%; border-collapse: collapse; table-layout: auto; }
+    th, td { padding: 12px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; font-size: 13px; }
+    th { position: relative; min-width: 96px; max-width: 520px; color: #667085; background: #f8fafc; font-weight: 900; white-space: nowrap; overflow: visible; }
+    .col-resizer {
+      position: absolute; top: 0; right: -3px; width: 7px; height: 100%;
+      cursor: col-resize; user-select: none;
+    }
+    .col-resizer:hover { background: rgba(36,84,198,.18); }
+    td { color: #344054; line-height: 1.55; }
+    tr:last-child td { border-bottom: 0; }
+    tr:hover td { background: #fbfdff; }
+    .entity { display: flex; flex-direction: column; gap: 2px; }
+    .entity strong { color: var(--ink); font-size: 13px; }
+    .entity span { color: var(--muted); font-size: 12px; }
+    .text-clip {
+      max-width: 360px; display: -webkit-box; overflow: hidden; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+    }
+    .small-btn {
+      min-height: 30px; padding: 4px 8px; border: 1px solid var(--line2); border-radius: 6px;
+      color: #344054; background: #fff; font-size: 12px; font-weight: 800;
+    }
+    .pill {
+      display: inline-flex; align-items: center; min-height: 24px; padding: 3px 8px; border-radius: 999px;
+      font-size: 12px; font-weight: 900; white-space: nowrap;
+    }
+    .pill.running, .pill.good { color: var(--green); background: var(--green-soft); }
+    .pill.stopped { color: #475467; background: var(--gray-soft); }
+    .pill.done { color: var(--brand); background: var(--brand-soft); }
+    .pill.mid { color: var(--amber); background: var(--amber-soft); }
+    .pill.bad { color: var(--red); background: var(--red-soft); }
+
+    .grid-form { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 16px; align-items: start; }
+    .form-section { padding-bottom: 16px; margin-bottom: 16px; border-bottom: 1px solid var(--line); }
+    .form-section:last-child { padding-bottom: 0; margin-bottom: 0; border-bottom: 0; }
+    .section-label { margin: 0 0 12px; color: #475467; font-size: 12px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
+    .field { margin-bottom: 13px; }
+    .field:last-child { margin-bottom: 0; }
+    label { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 7px; color: #344054; font-size: 13px; font-weight: 800; }
+    .label-note { color: #98a2b3; font-size: 12px; font-weight: 600; }
+    input, select, textarea {
+      width: 100%; border: 1px solid var(--line2); border-radius: 6px; color: var(--ink); background: #fff; outline: none;
+    }
+    input, select { height: 40px; padding: 0 11px; }
+    textarea { min-height: 92px; resize: vertical; padding: 10px 11px; line-height: 1.58; }
+    input:focus, select:focus, textarea:focus { border-color: var(--brand); box-shadow: 0 0 0 3px rgba(36,84,198,.12); }
+    .row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .row-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+    .hint-box { padding: 13px; border: 1px solid #c7d7fe; border-radius: 8px; background: var(--brand-soft); color: #344054; font-size: 13px; line-height: 1.65; }
+
+    .progress { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; margin-bottom: 16px; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: #fff; }
+    .step {
+      min-height: 76px; display: grid; grid-template-columns: 32px 1fr; gap: 10px; align-items: center;
+      padding: 12px; border-right: 1px solid var(--line); color: var(--muted);
+      cursor: pointer;
+    }
+    .step:last-child { border-right: 0; }
+    .step b {
+      width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center;
+      border-radius: 999px; background: var(--gray-soft); color: #475467; font-size: 12px;
+    }
+    .step strong { display: block; color: #475467; font-size: 14px; }
+    .step span { display: block; margin-top: 3px; font-size: 12px; line-height: 1.35; }
+    .step.active { background: var(--brand-soft); }
+    .step.active b { color: #fff; background: var(--brand); }
+    .step.active strong { color: var(--brand); }
+    .step.done b { color: #fff; background: var(--green); }
+    .screen-step { display: none; }
+    .screen-step.active { display: block; }
+    .upload {
+      min-height: 96px; display: grid; gap: 8px; padding: 14px; border: 1px dashed #a8b8ca; border-radius: 8px; background: #f8fbff;
+    }
+    .upload strong { color: var(--ink); font-size: 14px; }
+    .upload span { color: var(--muted); font-size: 13px; }
+    .upload input { height: auto; padding: 0; border: 0; background: transparent; }
+    .queue { display: grid; gap: 8px; }
+    .resume-card {
+      display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; padding: 11px 12px;
+      border: 1px solid var(--line); border-radius: 8px; background: #fff;
+    }
+    .resume-card strong { display: block; color: var(--ink); font-size: 14px; }
+    .resume-card span { color: var(--muted); font-size: 12px; }
+    .result-summary { display: grid; grid-template-columns: 280px 1fr; gap: 16px; align-items: start; }
+    .score-card { padding: 18px; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
+    .score-card .score { margin: 10px 0; color: var(--ink); font-size: 48px; font-weight: 900; line-height: 1; }
+    .detail-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .detail-item { padding: 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--subtle); }
+    .detail-item strong { display: block; margin-bottom: 8px; color: #475467; font-size: 13px; }
+    .detail-item p { margin: 0; color: #344054; line-height: 1.65; white-space: pre-wrap; font-size: 13px; }
+
+    .searchbar { display: grid; grid-template-columns: minmax(220px, 1fr) 170px 190px; gap: 10px; width: min(780px, 100%); }
+    .empty {
+      padding: 34px 14px; border: 1px dashed #cbd5e1; border-radius: var(--radius);
+      color: var(--muted); background: #fbfcfd; text-align: center; line-height: 1.7; font-size: 14px;
+    }
+    .schema-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+    .schema-card { padding: 14px; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
+    .schema-card h4 { margin: 0 0 10px; color: var(--ink); font-size: 15px; }
+    code, pre { font-family: Consolas, "SFMono-Regular", Menlo, monospace; }
+    pre { margin: 0; padding: 12px; overflow: auto; border-radius: 8px; background: #0f172a; color: #e5e7eb; font-size: 12px; line-height: 1.55; }
+
+    @media (max-width: 1180px) {
+      .app { grid-template-columns: 1fr; }
+      .sidebar { position: static; height: auto; }
+      .brand { display: flex; gap: 12px; align-items: center; }
+      .brand-mark { margin-bottom: 0; }
+      .nav { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+      .sidebar-footer { display: none; }
+      .grid-form, .result-summary { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 820px) {
+      .topbar { height: auto; align-items: flex-start; flex-direction: column; padding: 14px 16px; }
+      .content { padding: 18px 16px 28px; }
+      .page-head { flex-direction: column; }
+      .metric-strip, .progress, .detail-grid, .row, .row-3, .searchbar, .schema-grid, .nav { grid-template-columns: 1fr; }
+      .step { border-right: 0; border-bottom: 1px solid var(--line); }
+      .step:last-child { border-bottom: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app" id="appShell">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">HL</div>
+        <div>
+          <h1>HireLens</h1>
+          <p>企业招聘岗位标准化与简历智能评测系统</p>
+        </div>
+      </div>
+      <nav class="nav">
+        <button class="nav-btn active" data-page="jobsPage" type="button"><span class="icon">岗</span><span><strong>招聘岗位</strong><span>岗位池与招聘状态</span></span></button>
+        <button class="nav-btn" data-page="screenPage" type="button"><span class="icon">评</span><span><strong>简历评测</strong><span>按步骤创建评测任务</span></span></button>
+        <button class="nav-btn" data-page="resultsPage" type="button"><span class="icon">库</span><span><strong>结果管理</strong><span>候选人评测记录</span></span></button>
+        <button class="nav-btn" data-page="databasePage" type="button"><span class="icon">数</span><span><strong>数据方案</strong><span>数据库表与存储设计</span></span></button>
+      </nav>
+      <div class="sidebar-tools">
+        <button class="sidebar-tool-btn" id="toggleSidebar" type="button"><span>⇤</span><span class="sidebar-tool-text">收起导航</span></button>
+      </div>
+      <div class="sidebar-footer"><button class="btn danger" id="resetData" type="button">清空演示数据</button></div>
+    </aside>
+
+    <main class="main">
+      <div class="topbar">
+        <div class="crumb"><span>工作台</span><span>/</span><strong id="currentPageName">招聘岗位</strong></div>
+        <div class="top-actions">
+          <button class="btn secondary" id="loadDemo" type="button">载入示例数据</button>
+          <button class="btn ghost" data-page-jump="screenPage" type="button">开始评测</button>
+        </div>
+      </div>
+
+      <div class="content">
+        <section id="jobsPage" class="page active">
+          <div class="page-head">
+            <div class="page-title">
+              <h2>招聘岗位</h2>
+              <p>岗位列表是招聘管理主页面。新增或编辑岗位时进入独立配置页面，避免列表承载过多表单信息。</p>
+            </div>
+            <button class="btn" id="createJobBtn" type="button">新建岗位</button>
+          </div>
+
+          <div class="metric-strip">
+            <div class="metric"><span>岗位总数</span><strong id="metricJobs">0</strong></div>
+            <div class="metric"><span>进行中岗位</span><strong id="metricRunning">0</strong></div>
+            <div class="metric"><span>招聘人数</span><strong id="metricHeadcount">0</strong></div>
+            <div class="metric"><span>已评测简历</span><strong id="metricResults">0</strong></div>
+          </div>
+
+          <section class="panel">
+            <div class="panel-head">
+              <div><h3>岗位列表</h3><p>维护岗位状态、招聘人数、到岗时间和评测标准版本。</p></div>
+            </div>
+            <div class="panel-body">
+              <div id="jobEmpty" class="empty">暂无岗位。请先新建岗位，或点击“载入示例数据”。</div>
+              <div class="table-shell" id="jobTableWrap" style="display:none">
+                <div class="table-toolbar">
+                  <strong>岗位池</strong>
+                  <span class="pill running" id="runningLabel">0 个进行中</span>
+                </div>
+                <div class="table-wrap">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>岗位名称</th><th>人数</th><th>到岗时间</th><th>状态</th><th>人才画像</th><th>硬性要求</th><th>操作</th>
+                      </tr>
+                    </thead>
+                    <tbody id="jobTable"></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </section>
+        </section>
+
+        <section id="jobEditPage" class="page">
+          <div class="page-head">
+            <div class="page-title">
+              <h2 id="jobFormTitle">新建岗位</h2>
+              <p>将人才画像、硬性要求和加分项结构化，后续可直接作为模型评测和人工复核标准。</p>
+            </div>
+            <div class="actions">
+              <button class="btn secondary" data-page-jump="jobsPage" type="button">返回岗位列表</button>
+              <button class="btn" id="saveJob" type="button">保存岗位</button>
+            </div>
+          </div>
+
+          <div class="grid-form">
+            <section class="panel">
+              <div class="panel-head"><div><h3>岗位配置</h3><p>字段越结构化，评测结果越稳定。</p></div></div>
+              <div class="panel-body">
+                <input id="jobId" type="hidden">
+                <div class="form-section">
+                  <p class="section-label">基础信息</p>
+                  <div class="row">
+                    <div class="field"><label for="jobName">岗位名称</label><input id="jobName" placeholder="如：B2B 大客户销售经理"></div>
+                    <div class="field"><label for="headcount">招聘人数</label><input id="headcount" type="number" min="1" value="1"></div>
+                  </div>
+                  <div class="row">
+                    <div class="field"><label for="arrivalDate">到岗时间</label><input id="arrivalDate" type="date"></div>
+                    <div class="field"><label for="jobStatus">状态</label><select id="jobStatus"><option>在进行</option><option>停止</option><option>已完成</option></select></div>
+                  </div>
+                  <div class="field"><label for="jd">JD <span class="label-note">职责、场景、汇报关系</span></label><textarea id="jd" placeholder="输入岗位职责和任职要求..."></textarea></div>
+                </div>
+
+                <div class="form-section">
+                  <p class="section-label">人才画像</p>
+                  <div class="row-3">
+                    <div class="field"><label for="ageRange">年龄</label><input id="ageRange" placeholder="如：28-38 / 不限"></div>
+                    <div class="field"><label for="gender">性别</label><select id="gender"><option>不限</option><option>男</option><option>女</option></select></div>
+                    <div class="field"><label for="workYears">工作时间</label><input id="workYears" placeholder="如：5 年以上"></div>
+                  </div>
+                  <div class="row-3">
+                    <div class="field"><label for="education">最低学历</label><select id="education"><option>不限</option><option>大专</option><option>本科</option><option>硕士</option><option>博士</option></select></div>
+                    <div class="field"><label for="jobHopFreq">跳槽频率</label><input id="jobHopFreq" placeholder="如：近 5 年不超过 2 次"></div>
+                    <div class="field"><label for="personaKeywords">画像关键词</label><input id="personaKeywords" placeholder="如：大客户、方案销售、抗压"></div>
+                  </div>
+                  <div class="hint-box">合规提示：年龄、性别等字段适合用于内部画像讨论，不建议作为自动淘汰的唯一依据。生产版本应保留人工复核和合规审计记录。</div>
+                </div>
+
+                <div class="form-section">
+                  <p class="section-label">硬性要求</p>
+                  <div class="row">
+                    <div class="field"><label for="mustYears">经验年限</label><input id="mustYears" placeholder="如：3 年以上 B2B 销售经验"></div>
+                    <div class="field"><label for="mustIndustry">行业经验</label><input id="mustIndustry" placeholder="如：电子元器件/工业品/半导体"></div>
+                  </div>
+                  <div class="row">
+                    <div class="field"><label for="mustSkills">核心技能</label><input id="mustSkills" placeholder="如：大客户开发、方案销售、回款"></div>
+                    <div class="field"><label for="mustCert">证书/资质</label><input id="mustCert" placeholder="如：无 / PMP / 英语四级"></div>
+                  </div>
+                  <div class="field"><label for="mustHave">其他硬性要求 <span class="label-note">一行一条</span></label><textarea id="mustHave" placeholder="如：&#10;能够独立推进销售线索到成交&#10;可接受华东区域出差"></textarea></div>
+                </div>
+
+                <div class="form-section">
+                  <p class="section-label">加分项</p>
+                  <div class="row">
+                    <div class="field"><label for="bonusResources">资源/客户</label><input id="bonusResources" placeholder="如：有华东制造业客户资源"></div>
+                    <div class="field"><label for="bonusTools">工具/系统</label><input id="bonusTools" placeholder="如：CRM、SQL、Figma"></div>
+                  </div>
+                  <div class="row">
+                    <div class="field"><label for="bonusLanguage">语言能力</label><input id="bonusLanguage" placeholder="如：英文邮件沟通"></div>
+                    <div class="field"><label for="bonusManagement">管理/协作</label><input id="bonusManagement" placeholder="如：渠道管理、跨部门推进"></div>
+                  </div>
+                  <div class="field"><label for="niceHave">其他加分项 <span class="label-note">一行一条</span></label><textarea id="niceHave" placeholder="如：&#10;有技术型产品销售经验"></textarea></div>
+                </div>
+              </div>
+            </section>
+
+            <aside class="panel">
+              <div class="panel-head"><div><h3>标准预览</h3><p>保存后会用于简历评测。</p></div></div>
+              <div class="panel-body">
+                <div class="hint-box">建议每个硬性要求都写成可判断条件，例如“3 年以上 B2B 销售经验”“做过大客户开发”，避免“优秀沟通能力”这类不可验证描述。</div>
+              </div>
+            </aside>
+          </div>
+        </section>
+
+        <section id="screenPage" class="page">
+          <div class="page-head">
+            <div class="page-title"><h2>简历评测</h2><p>每一步对应一个操作：选择岗位、上传简历、确认评测。完成后进入独立的评测结果页。</p></div>
+          </div>
+          <div class="progress">
+            <div class="step active" data-step-indicator="1"><b>1</b><div><strong>选择岗位</strong><span>确定本次评测标准</span></div></div>
+            <div class="step" data-step-indicator="2"><b>2</b><div><strong>上传简历</strong><span>批量或单个录入</span></div></div>
+            <div class="step" data-step-indicator="3"><b>3</b><div><strong>确认评测</strong><span>生成结论并入库</span></div></div>
+          </div>
+          <section class="panel">
+            <div class="panel-head"><div><h3 id="screenStepTitle">选择评测岗位</h3><p id="screenStepHint">选择一个已配置标准的岗位。</p></div></div>
+            <div class="panel-body">
+              <div class="screen-step active" data-step="1">
+                <div class="field"><label for="screenJob">选择岗位</label><select id="screenJob"></select></div>
+                <div class="actions"><button class="btn" data-next-step="2" type="button">下一步：上传简历</button></div>
+              </div>
+              <div class="screen-step" data-step="2">
+                <div class="form-section">
+                  <p class="section-label">批量上传</p>
+                  <div class="upload">
+                    <strong id="fileName">选择本地文本简历文件</strong>
+                    <span>当前原型支持 .txt / .md / .csv。生产版可接 PDF / Word 解析服务。</span>
+                    <input id="resumeFiles" type="file" accept=".txt,.md,.csv,.html,.htm,text/html" multiple>
+                  </div>
+                </div>
+                <div class="form-section">
+                  <p class="section-label">单个候选人</p>
+                  <div class="row">
+                    <div class="field"><label for="candidateName">候选人名字</label><input id="candidateName" placeholder="批量上传时可留空"></div>
+                    <div class="field"><label for="resumeLabel">简历名称</label><input id="resumeLabel" placeholder="如：张三_销售经理简历"></div>
+                  </div>
+                  <div class="field"><label for="resumeText">简历文本</label><textarea id="resumeText" style="min-height:220px" placeholder="粘贴候选人简历文本..."></textarea></div>
+                </div>
+                <div id="batchList" class="queue"></div>
+                <div class="actions"><button class="btn secondary" data-next-step="1" type="button">上一步</button><button class="btn" data-next-step="3" type="button">下一步：确认评测</button></div>
+              </div>
+              <div class="screen-step" data-step="3">
+                <div id="confirmBox" class="hint-box">确认岗位和简历后，点击“开始评测”。评测结果会写入结果库，并打开独立结果页面。</div>
+                <div class="actions" style="margin-top:14px"><button class="btn secondary" data-next-step="2" type="button">上一步</button><button class="btn" id="runScreen" type="button">开始评测</button><button class="btn secondary" id="clearResume" type="button">清空当前简历</button></div>
+              </div>
+            </div>
+          </section>
+        </section>
+
+        <section id="resultViewPage" class="page">
+          <div class="page-head">
+            <div class="page-title"><h2>评测结果</h2><p>本页展示单次评测结论。可以返回结果管理页查看全部候选人记录。</p></div>
+            <div class="actions"><button class="btn secondary" data-page-jump="resultsPage" type="button">查看结果管理</button><button class="btn" data-page-jump="screenPage" type="button">继续评测</button></div>
+          </div>
+          <div id="singleResultContent" class="empty">暂无评测结果。</div>
+        </section>
+
+        <section id="resultsPage" class="page">
+          <div class="page-head">
+            <div class="page-title"><h2>评测结果管理</h2><p>候选人、简历、应聘岗位和评测结论统一沉淀，便于人工复核、面试邀约和漏斗分析。</p></div>
+            <button class="btn secondary" id="exportResults" type="button">导出 CSV</button>
+          </div>
+          <section class="panel">
+            <div class="panel-head"><div><h3>候选人评测库</h3><p>按候选人、岗位或结论快速定位。</p></div></div>
+            <div class="panel-body">
+              <div class="table-shell">
+                <div class="table-toolbar">
+                  <div class="searchbar">
+                    <input id="resultKeyword" placeholder="搜索候选人 / 简历 / 岗位">
+                    <select id="resultConclusion"><option value="">全部结论</option><option>非常匹配</option><option>一般匹配</option><option>不匹配</option></select>
+                    <select id="resultJob"></select>
+                  </div>
+                </div>
+                <div id="resultEmpty" class="empty">暂无评测结果。请先到“简历评测”页面完成一次评测。</div>
+                <div class="table-wrap" id="resultTableWrap" style="display:none">
+                  <table>
+                    <thead><tr><th>候选人</th><th>简历</th><th>应聘岗位</th><th>评测结论</th><th>分数</th><th>评测时间</th><th>操作</th></tr></thead>
+                    <tbody id="resultTable"></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </section>
+        </section>
+
+        <section id="databasePage" class="page">
+          <div class="page-head">
+            <div class="page-title"><h2>数据库存储方案</h2><p>正式产品建议采用后端数据库存储岗位、结构化标准、简历文件、评测任务和评测结果，前端只保留会话态。</p></div>
+          </div>
+          <div class="schema-grid">
+            <div class="schema-card"><h4>核心表</h4><pre>companies
+users
+jobs
+job_personas
+job_requirements
+resumes
+screening_tasks
+screening_results
+audit_logs</pre></div>
+            <div class="schema-card"><h4>jobs</h4><pre>id PK
+company_id FK
+title
+headcount
+arrival_date
+status
+jd_text
+created_by
+created_at
+updated_at</pre></div>
+            <div class="schema-card"><h4>job_personas</h4><pre>id PK
+job_id FK
+age_range
+gender_preference
+work_years
+min_education
+job_hop_frequency
+persona_keywords JSON
+compliance_note</pre></div>
+            <div class="schema-card"><h4>job_requirements</h4><pre>id PK
+job_id FK
+type ENUM('must','bonus')
+field_key
+field_label
+field_value
+weight
+is_knockout
+sort_order</pre></div>
+            <div class="schema-card"><h4>resumes</h4><pre>id PK
+company_id FK
+candidate_name
+file_name
+file_url
+parsed_text
+source
+uploaded_by
+created_at</pre></div>
+            <div class="schema-card"><h4>screening_results</h4><pre>id PK
+task_id FK
+resume_id FK
+job_id FK
+conclusion
+score
+matched_points JSON
+missing_points JSON
+risk_points JSON
+interview_questions JSON
+model_name
+prompt_version
+review_status
+created_at</pre></div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const storeKey = "resume_screener_workspace_v4";
+    const pageNames = { jobsPage: "招聘岗位", jobEditPage: "岗位编辑", screenPage: "简历评测", resultViewPage: "评测结果", resultsPage: "结果管理", databasePage: "数据方案" };
+    const screenTitles = { 1: ["选择评测岗位", "选择一个已配置标准的岗位。"], 2: ["上传简历", "可批量上传，也可粘贴单个候选人简历。"], 3: ["确认评测", "确认本次评测任务并生成结论。"] };
+    const state = loadState();
+    let pendingResumes = [];
+    let activeStep = 1;
+    let latestResults = [];
+
+    const demoJobs = [
+      {
+        id: makeId("job"), name: "B2B 大客户销售经理", headcount: 2, arrivalDate: "2026-06-30", status: "在进行",
+        jd: "负责工业电子/元器件方向 B2B 客户开发，挖掘重点客户需求，推进方案型销售、报价、合同和回款；维护渠道和代理商关系，协同技术团队完成项目导入。",
+        persona: { ageRange: "28-38", gender: "不限", workYears: "5 年以上", education: "本科", jobHopFreq: "近 5 年不超过 2 次", keywords: "大客户、方案销售、抗压、回款" },
+        must: { years: "3 年以上 B2B 销售经验", industry: "电子元器件、工业品或半导体", skills: "大客户开发、方案销售、合同回款", cert: "不限", other: "能够独立推进销售线索到成交\n可接受华东区域出差" },
+        bonus: { resources: "有华东制造业客户资源", tools: "熟悉 CRM", language: "英文邮件沟通", management: "渠道或代理商管理", other: "有技术型产品销售经验" }
+      },
+      {
+        id: makeId("job"), name: "AI 产品经理", headcount: 1, arrivalDate: "2026-07-15", status: "在进行",
+        jd: "负责企业级 AI 工具产品规划，梳理业务需求，设计产品流程和原型，推动研发、算法、运营协作落地。",
+        persona: { ageRange: "不限", gender: "不限", workYears: "3 年以上", education: "本科", jobHopFreq: "近 3 年不超过 2 次", keywords: "B 端、AI 应用、PRD、推动力" },
+        must: { years: "3 年以上产品经理经验", industry: "B 端或企业级产品", skills: "PRD、原型、需求分析、项目推进", cert: "不限", other: "理解 AI 或数据类产品" },
+        bonus: { resources: "有 HR SaaS 或招聘产品经验", tools: "Figma、SQL", language: "英文资料阅读", management: "跨部门协作", other: "做过模型评测或数据标注流程" }
+      }
+    ];
+
+    function loadState() {
+      try { const saved = JSON.parse(localStorage.getItem(storeKey)); if (saved && Array.isArray(saved.jobs) && Array.isArray(saved.results)) return saved; } catch (error) {}
+      return { jobs: [], results: [] };
+    }
+    function saveState() { localStorage.setItem(storeKey, JSON.stringify(state)); renderAll(); }
+    function makeId(prefix) { return prefix + "_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 7); }
+    function lines(value) { return String(value || "").split(/\n|；|;/).map((item) => item.trim()).filter(Boolean); }
+    function splitTags(value) { return String(value || "").split(/,|，|、|\n|;/).map((item) => item.trim()).filter(Boolean); }
+    function allRequirementLines(job) {
+      const must = job.must || {};
+      return [must.years, must.industry, must.skills, must.cert, ...lines(must.other)].filter(Boolean);
+    }
+    function allBonusLines(job) {
+      const bonus = job.bonus || {};
+      return [bonus.resources, bonus.tools, bonus.language, bonus.management, ...lines(bonus.other)].filter(Boolean);
+    }
+    function personaText(job) {
+      const p = job.persona || {};
+      return `年龄：${p.ageRange || "不限"}；性别：${p.gender || "不限"}；工作时间：${p.workYears || "未设置"}；最低学历：${p.education || "不限"}；跳槽频率：${p.jobHopFreq || "未设置"}；关键词：${p.keywords || "未设置"}`;
+    }
+    function tokens(text) {
+      return Array.from(new Set(String(text || "").replace(/[，。、《》：:（）()]/g, " ").split(/\s+|、|\/|,|\./).map((item) => item.trim()).filter((item) => item.length >= 2)));
+    }
+    function itemMatched(item, resume) {
+      const resumeText = String(resume || "").toLowerCase();
+      const stopWords = ["以上", "以下", "经验", "能力", "负责", "能够", "熟悉", "相关", "之一", "岗位", "要求", "不限"];
+      const itemTokens = tokens(String(item || "").toLowerCase()).filter((token) => !stopWords.includes(token));
+      if (!itemTokens.length) return false;
+      return itemTokens.some((token) => resumeText.includes(token));
+    }
+    function evaluateResume(job, resumeText) {
+      const must = allRequirementLines(job);
+      const nice = allBonusLines(job);
+      const persona = personaText(job);
+      const mustMatched = must.filter((item) => itemMatched(item, resumeText));
+      const mustMissing = must.filter((item) => !itemMatched(item, resumeText));
+      const niceMatched = nice.filter((item) => itemMatched(item, resumeText));
+      const jdKeywords = tokens(job.jd).filter((token) => itemMatched(token, resumeText));
+      const personaKeywords = tokens(persona).filter((token) => itemMatched(token, resumeText));
+      const hardScore = must.length ? (mustMatched.length / must.length) * 45 : 0;
+      const jdScore = Math.min(24, jdKeywords.length * 3);
+      const personaScore = Math.min(19, personaKeywords.length * 2.2);
+      const niceScore = nice.length ? Math.min(12, (niceMatched.length / nice.length) * 12) : 0;
+      let riskPenalty = 0;
+      const risks = [];
+      if (/频繁|跳槽|离职|空窗|gap|待业/i.test(resumeText)) { riskPenalty += 8; risks.push("简历中出现跳槽、离职或空窗相关表述，需要确认稳定性。"); }
+      if (!/\d+\s*年|一年|两年|三年|四年|五年|多年/.test(resumeText)) { riskPenalty += 6; risks.push("简历年限信息不够清晰，需要确认实际从业时间。"); }
+      if (mustMissing.length >= Math.ceil(Math.max(1, must.length / 2))) { riskPenalty += 12; risks.push("硬性要求缺失较多，不建议直接进入面试。"); }
+      const score = Math.round(Math.max(0, Math.min(100, hardScore + jdScore + personaScore + niceScore - riskPenalty)));
+      let conclusion = "不匹配";
+      if (score >= 75 && mustMissing.length <= 1) conclusion = "非常匹配";
+      else if (score >= 50 && mustMatched.length > 0) conclusion = "一般匹配";
+      return {
+        score, conclusion,
+        matched: [...mustMatched.map((item) => "硬性要求匹配：" + item), ...niceMatched.map((item) => "加分项匹配：" + item)].filter(Boolean),
+        missing: [...mustMissing.map((item) => "硬性要求不明确：" + item), ...nice.filter((item) => !itemMatched(item, resumeText)).map((item) => "加分项未体现：" + item)],
+        risks: risks.length ? risks : ["暂无明显风险信号，但仍建议核实业绩真实性、离职原因和候选人动机。"],
+        questions: ["请候选人举一个最典型项目，说明从线索到结果的完整过程。", "候选人过往核心业绩如何计算，个人贡献占比是多少？", ...mustMissing.slice(0, 3).map((item) => "重点追问硬性要求：" + item)]
+      };
+    }
+    function collectJobForm() {
+      return {
+        id: $("jobId").value || makeId("job"), name: $("jobName").value.trim(), headcount: Number($("headcount").value || 1), arrivalDate: $("arrivalDate").value, status: $("jobStatus").value, jd: $("jd").value.trim(),
+        persona: { ageRange: $("ageRange").value.trim(), gender: $("gender").value, workYears: $("workYears").value.trim(), education: $("education").value, jobHopFreq: $("jobHopFreq").value.trim(), keywords: $("personaKeywords").value.trim() },
+        must: { years: $("mustYears").value.trim(), industry: $("mustIndustry").value.trim(), skills: $("mustSkills").value.trim(), cert: $("mustCert").value.trim(), other: $("mustHave").value.trim() },
+        bonus: { resources: $("bonusResources").value.trim(), tools: $("bonusTools").value.trim(), language: $("bonusLanguage").value.trim(), management: $("bonusManagement").value.trim(), other: $("niceHave").value.trim() }
+      };
+    }
+    function fillJobForm(job) {
+      const p = job?.persona || {}, m = job?.must || {}, b = job?.bonus || {};
+      $("jobId").value = job?.id || ""; $("jobName").value = job?.name || ""; $("headcount").value = job?.headcount || 1; $("arrivalDate").value = job?.arrivalDate || ""; $("jobStatus").value = job?.status || "在进行"; $("jd").value = job?.jd || "";
+      $("ageRange").value = p.ageRange || ""; $("gender").value = p.gender || "不限"; $("workYears").value = p.workYears || ""; $("education").value = p.education || "不限"; $("jobHopFreq").value = p.jobHopFreq || ""; $("personaKeywords").value = p.keywords || "";
+      $("mustYears").value = m.years || ""; $("mustIndustry").value = m.industry || ""; $("mustSkills").value = m.skills || ""; $("mustCert").value = m.cert || ""; $("mustHave").value = m.other || "";
+      $("bonusResources").value = b.resources || ""; $("bonusTools").value = b.tools || ""; $("bonusLanguage").value = b.language || ""; $("bonusManagement").value = b.management || ""; $("niceHave").value = b.other || "";
+      $("jobFormTitle").textContent = job ? "编辑岗位" : "新建岗位";
+    }
+    function saveJob() {
+      const job = collectJobForm();
+      if (!job.name || !job.jd || !allRequirementLines(job).length) { alert("请至少填写岗位名称、JD 和一个硬性要求。"); return; }
+      const index = state.jobs.findIndex((item) => item.id === job.id);
+      if (index >= 0) state.jobs[index] = job; else state.jobs.unshift(job);
+      saveState(); setPage("jobsPage");
+    }
+    function deleteJob(id) {
+      const used = state.results.some((result) => result.jobId === id);
+      if (!confirm(used ? "该岗位已有评测结果。删除岗位后，历史结果仍保留岗位名称快照。确认删除？" : "确认删除该岗位？")) return;
+      state.jobs = state.jobs.filter((job) => job.id !== id); saveState();
+    }
+    function statusClass(status) { if (status === "在进行") return "running"; if (status === "已完成") return "done"; return "stopped"; }
+    function conclusionClass(conclusion) { if (conclusion === "非常匹配") return "good"; if (conclusion === "一般匹配") return "mid"; return "bad"; }
+    function renderJobs() {
+      const runningCount = state.jobs.filter((job) => job.status === "在进行").length;
+      $("metricJobs").textContent = state.jobs.length; $("metricRunning").textContent = runningCount; $("metricHeadcount").textContent = state.jobs.reduce((sum, job) => sum + Number(job.headcount || 0), 0); $("metricResults").textContent = state.results.length; $("runningLabel").textContent = runningCount + " 个进行中";
+      $("jobEmpty").style.display = state.jobs.length ? "none" : "block"; $("jobTableWrap").style.display = state.jobs.length ? "block" : "none";
+      $("jobTable").innerHTML = state.jobs.map((job) => `<tr><td><strong>${escapeHtml(job.name)}</strong></td><td>${job.headcount || 1}</td><td>${escapeHtml(job.arrivalDate || "未设置")}</td><td><span class="pill ${statusClass(job.status)}">${escapeHtml(job.status)}</span></td><td><span class="text-clip">${escapeHtml(personaText(job))}</span></td><td><span class="text-clip">${escapeHtml(allRequirementLines(job).join("；"))}</span></td><td><button class="small-btn" data-edit-job="${job.id}" type="button">编辑</button> <button class="small-btn" data-delete-job="${job.id}" type="button">删除</button></td></tr>`).join("");
+    }
+    function renderJobOptions() {
+      const running = state.jobs.filter((job) => job.status === "在进行");
+      const options = (running.length ? running : state.jobs).map((job) => `<option value="${job.id}">${escapeHtml(job.name)} (${escapeHtml(job.status)})</option>`).join("");
+      $("screenJob").innerHTML = options || `<option value="">请先新增岗位</option>`;
+      $("resultJob").innerHTML = `<option value="">全部岗位</option>` + state.jobs.map((job) => `<option value="${escapeHtml(job.name)}">${escapeHtml(job.name)}</option>`).join("");
+    }
+    function renderPendingResumes() {
+      $("batchList").innerHTML = pendingResumes.map((resume, index) => `<div class="resume-card"><div><strong>${escapeHtml(resume.candidateName)}</strong><span>${escapeHtml(resume.resumeName)} · ${resume.resumeText.length} 字</span></div><button class="small-btn" data-remove-resume="${index}" type="button">移除</button></div>`).join("");
+    }
+    function setScreenStep(step) {
+      activeStep = step;
+      document.querySelectorAll(".screen-step").forEach((item) => item.classList.toggle("active", Number(item.dataset.step) === step));
+      document.querySelectorAll("[data-step-indicator]").forEach((item) => { const n = Number(item.dataset.stepIndicator); item.classList.toggle("active", n === step); item.classList.toggle("done", n < step); });
+      $("screenStepTitle").textContent = screenTitles[step][0]; $("screenStepHint").textContent = screenTitles[step][1]; updateConfirmBox();
+    }
+    function updateConfirmBox() {
+      const job = state.jobs.find((item) => item.id === $("screenJob").value);
+      const pasted = $("resumeText").value.trim() ? 1 : 0;
+      $("confirmBox").textContent = `岗位：${job ? job.name : "未选择"}；待评测简历：${pendingResumes.length + pasted} 份。点击开始评测后将生成结论并写入结果库。`;
+    }
+    async function collectUploadedFiles(files) {
+      pendingResumes = [];
+      for (const file of files) pendingResumes.push({ candidateName: cleanName(file.name), resumeName: file.name, resumeText: await file.text() });
+      $("fileName").textContent = pendingResumes.length ? `已选择 ${pendingResumes.length} 份简历` : "选择本地文本简历文件";
+      renderPendingResumes(); updateConfirmBox();
+    }
+    function runScreening() {
+      const job = state.jobs.find((item) => item.id === $("screenJob").value);
+      if (!job) { alert("请先选择一个岗位。"); setScreenStep(1); return; }
+      let resumes = [...pendingResumes];
+      const pasted = $("resumeText").value.trim();
+      if (pasted) resumes.push({ candidateName: $("candidateName").value.trim() || "未命名候选人", resumeName: $("resumeLabel").value.trim() || "粘贴简历", resumeText: pasted });
+      if (!resumes.length) { alert("请上传简历或粘贴单份简历。"); setScreenStep(2); return; }
+      const now = new Date().toLocaleString("zh-CN", { hour12: false });
+      latestResults = resumes.map((resume) => ({ id: makeId("result"), jobId: job.id, jobName: job.name, candidateName: resume.candidateName, resumeName: resume.resumeName, resumeText: resume.resumeText, createdAt: now, ...evaluateResume(job, resume.resumeText) }));
+      state.results.unshift(...latestResults);
+      pendingResumes = []; $("resumeFiles").value = ""; $("resumeText").value = ""; $("candidateName").value = ""; $("resumeLabel").value = ""; $("fileName").textContent = "选择本地文本简历文件";
+      saveState(); renderSingleResults(latestResults); setPage("resultViewPage"); setScreenStep(1);
+    }
+    function resultBlock(item) {
+      return `<div class="result-summary" style="margin-bottom:16px"><div class="score-card"><span class="pill ${conclusionClass(item.conclusion)}">${escapeHtml(item.conclusion)}</span><div class="score">${item.score}</div><div class="entity"><strong>${escapeHtml(item.candidateName)}</strong><span>${escapeHtml(item.jobName)} · ${escapeHtml(item.resumeName)}</span></div></div><div class="detail-grid"><div class="detail-item"><strong>匹配依据</strong><p>${escapeHtml((item.matched.length ? item.matched : ["未识别到明确满足项"]).join("\n"))}</p></div><div class="detail-item"><strong>缺失或不明确</strong><p>${escapeHtml(item.missing.join("\n"))}</p></div><div class="detail-item"><strong>风险点</strong><p>${escapeHtml(item.risks.join("\n"))}</p></div><div class="detail-item"><strong>建议追问</strong><p>${escapeHtml(item.questions.join("\n"))}</p></div></div></div>`;
+    }
+    function renderSingleResults(results) { $("singleResultContent").className = ""; $("singleResultContent").innerHTML = results.map(resultBlock).join(""); }
+    function renderResults() {
+      const keyword = $("resultKeyword").value.trim().toLowerCase(), conclusion = $("resultConclusion").value, jobName = $("resultJob").value;
+      const filtered = state.results.filter((item) => { const haystack = [item.candidateName, item.resumeName, item.jobName].join(" ").toLowerCase(); return (!keyword || haystack.includes(keyword)) && (!conclusion || item.conclusion === conclusion) && (!jobName || item.jobName === jobName); });
+      $("resultEmpty").style.display = filtered.length ? "none" : "block"; $("resultTableWrap").style.display = filtered.length ? "block" : "none";
+      $("resultTable").innerHTML = filtered.map((item) => `<tr><td><span class="entity"><strong>${escapeHtml(item.candidateName)}</strong><span>${escapeHtml(item.id)}</span></span></td><td><span class="text-clip">${escapeHtml(item.resumeName)}</span></td><td>${escapeHtml(item.jobName)}</td><td><span class="pill ${conclusionClass(item.conclusion)}">${escapeHtml(item.conclusion)}</span></td><td><strong>${item.score}</strong></td><td>${escapeHtml(item.createdAt)}</td><td><button class="small-btn" data-view-result="${item.id}" type="button">详情</button> <button class="small-btn" data-delete-result="${item.id}" type="button">删除</button></td></tr>`).join("");
+    }
+    function exportResults() {
+      if (!state.results.length) { alert("暂无可导出的评测结果。"); return; }
+      const rows = [["候选人名字", "简历", "应聘岗位", "评测结论", "分数", "评测时间", "匹配依据", "风险点"]];
+      state.results.forEach((item) => rows.push([item.candidateName, item.resumeName, item.jobName, item.conclusion, item.score, item.createdAt, item.matched.join(" / "), item.risks.join(" / ")]));
+      const csv = rows.map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(",")).join("\n");
+      const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" }); const url = URL.createObjectURL(blob); const link = document.createElement("a"); link.href = url; link.download = "简历评测结果.csv"; link.click(); URL.revokeObjectURL(url);
+    }
+    function cleanName(name) { return name.replace(/\.[^.]+$/, "").replace(/[_-]?简历|resume/ig, "").trim() || "未命名候选人"; }
+    function escapeHtml(text) { return String(text ?? "").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char])); }
+    function setPage(pageId) {
+      document.querySelectorAll(".nav-btn").forEach((item) => item.classList.toggle("active", item.dataset.page === pageId));
+      document.querySelectorAll(".page").forEach((item) => item.classList.toggle("active", item.id === pageId));
+      $("currentPageName").textContent = pageNames[pageId] || "工作台";
+      if (pageId === "screenPage") setScreenStep(1);
+      renderAll();
+    }
+    function makeTablesResizable() {
+      document.querySelectorAll("table").forEach((table) => {
+        table.querySelectorAll("th").forEach((th, index) => {
+          if (th.querySelector(".col-resizer")) return;
+          const handle = document.createElement("span");
+          handle.className = "col-resizer";
+          handle.addEventListener("mousedown", (event) => {
+            event.preventDefault();
+            const startX = event.clientX;
+            const startWidth = th.offsetWidth;
+            const cells = table.querySelectorAll(`tr > *:nth-child(${index + 1})`);
+            const onMove = (moveEvent) => {
+              const nextWidth = Math.max(86, startWidth + moveEvent.clientX - startX);
+              cells.forEach((cell) => {
+                cell.style.width = nextWidth + "px";
+                cell.style.minWidth = nextWidth + "px";
+              });
+            };
+            const onUp = () => {
+              document.removeEventListener("mousemove", onMove);
+              document.removeEventListener("mouseup", onUp);
+            };
+            document.addEventListener("mousemove", onMove);
+            document.addEventListener("mouseup", onUp);
+          });
+          th.appendChild(handle);
+        });
+      });
+    }
+    function renderAll() { renderJobs(); renderJobOptions(); renderPendingResumes(); renderResults(); updateConfirmBox(); makeTablesResizable(); }
+
+    document.querySelectorAll(".nav-btn").forEach((btn) => btn.addEventListener("click", () => setPage(btn.dataset.page)));
+    document.querySelectorAll("[data-page-jump]").forEach((btn) => btn.addEventListener("click", () => setPage(btn.dataset.pageJump)));
+    document.querySelectorAll("[data-next-step]").forEach((btn) => btn.addEventListener("click", () => setScreenStep(Number(btn.dataset.nextStep))));
+    document.querySelectorAll("[data-step-indicator]").forEach((step) => step.addEventListener("click", () => setScreenStep(Number(step.dataset.stepIndicator))));
+    $("toggleSidebar").addEventListener("click", () => {
+      $("appShell").classList.toggle("sidebar-collapsed");
+      $("toggleSidebar").innerHTML = $("appShell").classList.contains("sidebar-collapsed")
+        ? "<span>⇥</span><span class=\"sidebar-tool-text\">展开导航</span>"
+        : "<span>⇤</span><span class=\"sidebar-tool-text\">收起导航</span>";
+    });
+    $("createJobBtn").addEventListener("click", () => { fillJobForm(null); setPage("jobEditPage"); });
+    $("saveJob").addEventListener("click", saveJob);
+    $("loadDemo").addEventListener("click", () => { if (!state.jobs.length || confirm("载入示例会追加两个岗位，是否继续？")) { state.jobs.unshift(...demoJobs.map((job) => ({ ...job, id: makeId("job") }))); saveState(); } });
+    $("resetData").addEventListener("click", () => { if (!confirm("确认清空所有岗位和评测结果？")) return; state.jobs = []; state.results = []; pendingResumes = []; latestResults = []; localStorage.removeItem(storeKey); fillJobForm(null); saveState(); });
+    $("resumeFiles").addEventListener("change", (event) => collectUploadedFiles(event.target.files));
+    $("resumeText").addEventListener("input", updateConfirmBox);
+    $("screenJob").addEventListener("change", updateConfirmBox);
+    $("runScreen").addEventListener("click", runScreening);
+    $("clearResume").addEventListener("click", () => { pendingResumes = []; $("resumeFiles").value = ""; $("resumeText").value = ""; $("candidateName").value = ""; $("resumeLabel").value = ""; $("fileName").textContent = "选择本地文本简历文件"; renderPendingResumes(); updateConfirmBox(); });
+    $("resultKeyword").addEventListener("input", renderResults); $("resultConclusion").addEventListener("change", renderResults); $("resultJob").addEventListener("change", renderResults); $("exportResults").addEventListener("click", exportResults);
+    document.addEventListener("click", (event) => {
+      const editJobId = event.target.dataset.editJob, deleteJobId = event.target.dataset.deleteJob, removeResumeIndex = event.target.dataset.removeResume, viewResultId = event.target.dataset.viewResult, deleteResultId = event.target.dataset.deleteResult;
+      if (editJobId) { const job = state.jobs.find((item) => item.id === editJobId); if (job) fillJobForm(job); setPage("jobEditPage"); window.scrollTo({ top: 0, behavior: "smooth" }); }
+      if (deleteJobId) deleteJob(deleteJobId);
+      if (removeResumeIndex !== undefined) { pendingResumes.splice(Number(removeResumeIndex), 1); renderPendingResumes(); updateConfirmBox(); }
+      if (viewResultId) { const item = state.results.find((result) => result.id === viewResultId); if (item) { latestResults = [item]; renderSingleResults(latestResults); setPage("resultViewPage"); } }
+      if (deleteResultId) { if (confirm("确认删除这条评测结果？")) { state.results = state.results.filter((item) => item.id !== deleteResultId); saveState(); } }
+    });
+    fillJobForm(null); setScreenStep(1); renderAll();
+  </script>
+</body>
+</html>

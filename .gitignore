@@ -1,0 +1,8 @@
+resume_screener_backend/config.local.json
+resume_screener_backend/*.sqlite3
+resume_screener_backend/__pycache__/
+resume_screener_backend/*.log
+.codex_prd_tmp/*.sqlite3
+.env
+data/
+*.pyc

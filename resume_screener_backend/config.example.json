@@ -1,0 +1,7 @@
+{
+  "RESUME_SCREENER_LLM_PROVIDER": "deepseek",
+  "RESUME_SCREENER_LLM_BASE_URL": "https://api.deepseek.com",
+  "RESUME_SCREENER_MODEL": "deepseek-v4-flash",
+  "RESUME_SCREENER_LLM_API_KEY": "替换为你的 DeepSeek API Key",
+  "RESUME_SCREENER_LLM_TIMEOUT": "60"
+}
