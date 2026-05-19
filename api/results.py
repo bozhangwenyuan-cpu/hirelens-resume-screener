@@ -29,3 +29,21 @@ class handler(BaseHTTPRequestHandler):
             json_response(self, {"items": results or []})
         except Exception as exc:
             json_response(self, {"error": str(exc)}, status=400)
+
+    def do_DELETE(self) -> None:
+        try:
+            params = parse_qs(urlparse(self.path).query)
+            organization_id = (params.get("organization_id") or [""])[0]
+            result_id = (params.get("id") or [""])[0]
+            if not organization_id:
+                raise ValueError("organization_id 不能为空")
+            if not result_id:
+                raise ValueError("id 不能为空")
+            supabase_request(
+                "DELETE",
+                "screening_results",
+                query={"id": f"eq.{result_id}", "organization_id": f"eq.{organization_id}"},
+            )
+            json_response(self, {"ok": True})
+        except Exception as exc:
+            json_response(self, {"error": str(exc)}, status=400)

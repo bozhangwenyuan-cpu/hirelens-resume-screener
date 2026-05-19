@@ -10,7 +10,7 @@ from html import unescape
 from typing import Any
 
 
-PROMPT_VERSION = "resume-screening-saas-v1"
+PROMPT_VERSION = "resume-screening-saas-v2"
 
 
 def env(name: str, default: str = "") -> str:
@@ -23,7 +23,7 @@ def json_response(handler: Any, data: Any, status: int = 200) -> None:
     handler.send_header("Content-Type", "application/json; charset=utf-8")
     handler.send_header("Content-Length", str(len(body)))
     handler.send_header("Access-Control-Allow-Origin", "*")
-    handler.send_header("Access-Control-Allow-Methods", "GET,POST,OPTIONS")
+    handler.send_header("Access-Control-Allow-Methods", "GET,POST,PATCH,DELETE,OPTIONS")
     handler.send_header("Access-Control-Allow-Headers", "Content-Type,Authorization")
     handler.end_headers()
     handler.wfile.write(body)
@@ -119,8 +119,12 @@ def call_deepseek(job: dict[str, Any], resume: dict[str, Any]) -> dict[str, Any]
             {
                 "role": "system",
                 "content": (
-                    "你是企业招聘简历初筛专家。只基于输入信息判断，不要虚构。"
+                    "你是企业招聘简历初筛专家，目标是帮助 HR 做稳定、可复核的一面前初筛。"
+                    "必须逐条检查岗位硬性要求、人才画像、加分项，并引用简历中的具体证据或说明缺失原因。"
+                    "只基于输入信息判断，不要虚构；没有证据时必须写“不明确”或“未体现”。"
                     "年龄、性别、婚育、民族、宗教、健康状况等敏感信息不得影响 conclusion 和 score，只能作为人工复核风险提示。"
+                    "评分规则：硬性要求占 60%，JD 职责匹配占 20%，加分项占 10%，风险扣分占 10%。"
+                    "如果关键硬性要求缺失 2 项及以上，不能给“非常匹配”。如果核心硬性要求完全不明确，优先给“不匹配”。"
                     "输出合法 JSON，conclusion 只能是：非常匹配、一般匹配、不匹配。"
                 ),
             },
@@ -132,11 +136,11 @@ def call_deepseek(job: dict[str, Any], resume: dict[str, Any]) -> dict[str, Any]
                         "output_schema": {
                             "conclusion": "非常匹配 / 一般匹配 / 不匹配",
                             "score": "0-100 integer",
-                            "matched_points": [],
-                            "missing_points": [],
-                            "risk_points": [],
-                            "interview_questions": [],
-                            "summary": "",
+                            "matched_points": ["每条都要包含：要求/证据/判断"],
+                            "missing_points": ["每条都要包含：要求/缺失原因/影响"],
+                            "risk_points": ["每条都要包含：风险/原因/建议核实方式"],
+                            "interview_questions": ["围绕缺失项、风险项和关键业绩设计 3-6 个追问"],
+                            "summary": "用 2-4 句话说明整体判断逻辑，不要空泛",
                         },
                         "job": job,
                         "resume": resume,

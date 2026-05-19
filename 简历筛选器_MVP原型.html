@@ -285,6 +285,21 @@
       .step { border-right: 0; border-bottom: 1px solid var(--line); }
       .step:last-child { border-bottom: 0; }
     }
+    #loadDemo,
+    #resetData,
+    [data-page="databasePage"] {
+      display: none !important;
+    }
+    .ai-status {
+      margin-top: 12px;
+      padding: 12px;
+      border: 1px solid #c7d7fe;
+      border-radius: 8px;
+      background: #eef4ff;
+      color: #344054;
+      font-size: 13px;
+      line-height: 1.6;
+    }
   </style>
 </head>
 <body>
@@ -813,6 +828,196 @@ created_at</pre></div>
     }
     function renderAll() { renderJobs(); renderJobOptions(); renderPendingResumes(); renderResults(); updateConfirmBox(); makeTablesResizable(); }
 
+    const ORG_ID = "1223fd31-7c98-4f07-a497-e9327aac7cbb";
+    const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+    async function apiFetch(path, options = {}) {
+      const response = await fetch(path, {
+        ...options,
+        headers: { "Content-Type": "application/json", ...(options.headers || {}) }
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || "接口请求失败");
+      return data;
+    }
+    function firstRow(value) { return Array.isArray(value) ? value[0] || {} : value || {}; }
+    function reqValue(requirements, type, key) {
+      const row = (requirements || []).find((item) => item.type === type && item.field_key === key);
+      return row?.field_value || "";
+    }
+    function reqOther(requirements, type, knownKeys) {
+      return (requirements || []).filter((item) => item.type === type && !knownKeys.includes(item.field_key)).map((item) => item.field_value).filter(Boolean).join("\n");
+    }
+    function jobToFormModel(row) {
+      const persona = firstRow(row.job_personas);
+      const requirements = Array.isArray(row.job_requirements) ? row.job_requirements : [];
+      const keywordValue = persona.persona_keywords;
+      return {
+        id: row.id,
+        name: row.title || "",
+        headcount: row.headcount || 1,
+        arrivalDate: row.arrival_date || "",
+        status: row.status || "在进行",
+        jd: row.jd_text || "",
+        persona: {
+          ageRange: persona.age_range || "",
+          gender: persona.gender_preference || "不限",
+          workYears: persona.work_years || "",
+          education: persona.min_education || "不限",
+          jobHopFreq: persona.job_hop_frequency || "",
+          keywords: Array.isArray(keywordValue) ? keywordValue.join("、") : keywordValue || ""
+        },
+        must: {
+          years: reqValue(requirements, "must", "years"),
+          industry: reqValue(requirements, "must", "industry"),
+          skills: reqValue(requirements, "must", "skills"),
+          cert: reqValue(requirements, "must", "cert"),
+          other: reqOther(requirements, "must", ["years", "industry", "skills", "cert"])
+        },
+        bonus: {
+          resources: reqValue(requirements, "bonus", "resources"),
+          tools: reqValue(requirements, "bonus", "tools"),
+          language: reqValue(requirements, "bonus", "language"),
+          management: reqValue(requirements, "bonus", "management"),
+          other: reqOther(requirements, "bonus", ["resources", "tools", "language", "management"])
+        }
+      };
+    }
+    function makeRequirement(type, key, label, value, isKnockout, sortOrder) {
+      return { type, field_key: key, field_label: label, field_value: value, is_knockout: isKnockout, sort_order: sortOrder };
+    }
+    function formJobToApiPayload(job) {
+      const requirements = [
+        makeRequirement("must", "years", "经验年限", job.must.years, true, 1),
+        makeRequirement("must", "industry", "行业经验", job.must.industry, true, 2),
+        makeRequirement("must", "skills", "核心能力", job.must.skills, true, 3),
+        makeRequirement("must", "cert", "证书/资质", job.must.cert, true, 4),
+        ...lines(job.must.other).map((value, index) => makeRequirement("must", "other_" + index, "其他硬性要求", value, true, 20 + index)),
+        makeRequirement("bonus", "resources", "客户/资源", job.bonus.resources, false, 101),
+        makeRequirement("bonus", "tools", "工具能力", job.bonus.tools, false, 102),
+        makeRequirement("bonus", "language", "语言能力", job.bonus.language, false, 103),
+        makeRequirement("bonus", "management", "管理经验", job.bonus.management, false, 104),
+        ...lines(job.bonus.other).map((value, index) => makeRequirement("bonus", "other_" + index, "其他加分项", value, false, 120 + index))
+      ].filter((item) => String(item.field_value || "").trim());
+      return {
+        organization_id: ORG_ID,
+        id: uuidPattern.test(job.id) ? job.id : undefined,
+        title: job.name,
+        headcount: job.headcount,
+        arrival_date: job.arrivalDate || null,
+        status: job.status,
+        jd_text: job.jd,
+        persona: {
+          age_range: job.persona.ageRange,
+          gender_preference: job.persona.gender,
+          work_years: job.persona.workYears,
+          min_education: job.persona.education,
+          job_hop_frequency: job.persona.jobHopFreq,
+          persona_keywords: splitTags(job.persona.keywords)
+        },
+        requirements
+      };
+    }
+    function resultToViewModel(row) {
+      return {
+        id: row.id,
+        jobId: row.job_id,
+        jobName: row.jobs?.title || "未命名岗位",
+        candidateName: row.resumes?.candidate_name || "未命名候选人",
+        resumeName: row.resumes?.file_name || "简历",
+        createdAt: row.created_at ? new Date(row.created_at).toLocaleString("zh-CN", { hour12: false }) : "",
+        conclusion: row.conclusion || "一般匹配",
+        score: row.score || 0,
+        matched: Array.isArray(row.matched_points) ? row.matched_points : [],
+        missing: Array.isArray(row.missing_points) ? row.missing_points : [],
+        risks: Array.isArray(row.risk_points) ? row.risk_points : [],
+        questions: Array.isArray(row.interview_questions) ? row.interview_questions : [],
+        summary: row.summary || ""
+      };
+    }
+    async function loadRemoteData() {
+      try {
+        const [jobsData, resultsData] = await Promise.all([
+          apiFetch(`/api/jobs?organization_id=${encodeURIComponent(ORG_ID)}`),
+          apiFetch(`/api/results?organization_id=${encodeURIComponent(ORG_ID)}`)
+        ]);
+        state.jobs = (jobsData.items || []).map(jobToFormModel);
+        state.results = (resultsData.items || []).map(resultToViewModel);
+        renderAll();
+      } catch (error) {
+        console.error(error);
+        alert("在线数据读取失败：" + error.message);
+      }
+    }
+    async function saveJob() {
+      const job = collectJobForm();
+      if (!job.name || !job.jd || !allRequirementLines(job).length) { alert("请至少填写岗位名称、JD 和一个硬性要求。"); return; }
+      try {
+        const payload = formJobToApiPayload(job);
+        const method = payload.id ? "PATCH" : "POST";
+        await apiFetch("/api/jobs", { method, body: JSON.stringify(payload) });
+        await loadRemoteData();
+        setPage("jobsPage");
+      } catch (error) {
+        console.error(error);
+        alert("岗位保存失败：" + error.message);
+      }
+    }
+    async function deleteJob(id) {
+      const used = state.results.some((result) => result.jobId === id);
+      if (!confirm(used ? "该岗位已有评测结果。删除岗位后，历史结果也会受影响。确认删除？" : "确认删除该岗位？")) return;
+      await apiFetch(`/api/jobs?id=${encodeURIComponent(id)}&organization_id=${encodeURIComponent(ORG_ID)}`, { method: "DELETE" });
+      await loadRemoteData();
+    }
+    async function runScreening() {
+      const job = state.jobs.find((item) => item.id === $("screenJob").value);
+      if (!job) { alert("请先选择一个岗位。"); setScreenStep(1); return; }
+      let resumes = [...pendingResumes];
+      const pasted = $("resumeText").value.trim();
+      if (pasted) resumes.push({ candidateName: $("candidateName").value.trim() || "未命名候选人", resumeName: $("resumeLabel").value.trim() || "粘贴简历", resumeText: pasted });
+      if (!resumes.length) { alert("请上传简历或粘贴单份简历。"); setScreenStep(2); return; }
+      $("confirmBox").innerHTML = `<div class="ai-status"><strong>AI 正在分析</strong><br>正在调用 DeepSeek 逐项比对岗位硬性要求、人才画像、加分项和简历证据，请稍等。</div>`;
+      try {
+        const data = await apiFetch("/api/screenings", {
+          method: "POST",
+          body: JSON.stringify({
+            organization_id: ORG_ID,
+            job_id: job.id,
+            resumes: resumes.map((resume) => ({
+              candidate_name: resume.candidateName,
+              resume_name: resume.resumeName,
+              resume_text: resume.resumeText
+            }))
+          })
+        });
+        latestResults = (data.results || []).map((row, index) => {
+          const sourceResume = resumes[index] || {};
+          return resultToViewModel({
+            ...row,
+            jobs: { title: job.name },
+            resumes: { candidate_name: sourceResume.candidateName, file_name: sourceResume.resumeName }
+          });
+        });
+        pendingResumes = []; $("resumeFiles").value = ""; $("resumeText").value = ""; $("candidateName").value = ""; $("resumeLabel").value = ""; $("fileName").textContent = "选择本地文本简历文件";
+        await loadRemoteData();
+        renderSingleResults(latestResults);
+        setPage("resultViewPage");
+        setScreenStep(1);
+      } catch (error) {
+        console.error(error);
+        alert("AI 评测失败：" + error.message);
+        updateConfirmBox();
+      }
+    }
+    function resultBlock(item) {
+      return `<div class="result-summary" style="margin-bottom:16px"><div class="score-card"><span class="pill ${conclusionClass(item.conclusion)}">${escapeHtml(item.conclusion)}</span><div class="score">${item.score}</div><div class="entity"><strong>${escapeHtml(item.candidateName)}</strong><span>${escapeHtml(item.jobName)} · ${escapeHtml(item.resumeName)}</span></div>${item.summary ? `<p class="ai-status">${escapeHtml(item.summary)}</p>` : ""}</div><div class="detail-grid"><div class="detail-item"><strong>AI 匹配依据</strong><p>${escapeHtml((item.matched.length ? item.matched : ["未识别到明确满足项"]).join("\n"))}</p></div><div class="detail-item"><strong>缺失或不明确</strong><p>${escapeHtml((item.missing.length ? item.missing : ["暂无明显缺失项"]).join("\n"))}</p></div><div class="detail-item"><strong>风险点</strong><p>${escapeHtml((item.risks.length ? item.risks : ["暂无明显风险信号，建议人工复核关键经历。"]).join("\n"))}</p></div><div class="detail-item"><strong>建议追问</strong><p>${escapeHtml((item.questions.length ? item.questions : ["请候选人说明最能代表岗位能力的项目经历。"]).join("\n"))}</p></div></div></div>`;
+    }
+    async function bootApp() {
+      fillJobForm(null);
+      setScreenStep(1);
+      await loadRemoteData();
+    }
+
     document.querySelectorAll(".nav-btn").forEach((btn) => btn.addEventListener("click", () => setPage(btn.dataset.page)));
     document.querySelectorAll("[data-page-jump]").forEach((btn) => btn.addEventListener("click", () => setPage(btn.dataset.pageJump)));
     document.querySelectorAll("[data-next-step]").forEach((btn) => btn.addEventListener("click", () => setScreenStep(Number(btn.dataset.nextStep))));
@@ -833,15 +1038,20 @@ created_at</pre></div>
     $("runScreen").addEventListener("click", runScreening);
     $("clearResume").addEventListener("click", () => { pendingResumes = []; $("resumeFiles").value = ""; $("resumeText").value = ""; $("candidateName").value = ""; $("resumeLabel").value = ""; $("fileName").textContent = "选择本地文本简历文件"; renderPendingResumes(); updateConfirmBox(); });
     $("resultKeyword").addEventListener("input", renderResults); $("resultConclusion").addEventListener("change", renderResults); $("resultJob").addEventListener("change", renderResults); $("exportResults").addEventListener("click", exportResults);
-    document.addEventListener("click", (event) => {
+    document.addEventListener("click", async (event) => {
       const editJobId = event.target.dataset.editJob, deleteJobId = event.target.dataset.deleteJob, removeResumeIndex = event.target.dataset.removeResume, viewResultId = event.target.dataset.viewResult, deleteResultId = event.target.dataset.deleteResult;
       if (editJobId) { const job = state.jobs.find((item) => item.id === editJobId); if (job) fillJobForm(job); setPage("jobEditPage"); window.scrollTo({ top: 0, behavior: "smooth" }); }
       if (deleteJobId) deleteJob(deleteJobId);
       if (removeResumeIndex !== undefined) { pendingResumes.splice(Number(removeResumeIndex), 1); renderPendingResumes(); updateConfirmBox(); }
       if (viewResultId) { const item = state.results.find((result) => result.id === viewResultId); if (item) { latestResults = [item]; renderSingleResults(latestResults); setPage("resultViewPage"); } }
-      if (deleteResultId) { if (confirm("确认删除这条评测结果？")) { state.results = state.results.filter((item) => item.id !== deleteResultId); saveState(); } }
+      if (deleteResultId) {
+        if (confirm("确认删除这条评测结果？")) {
+          await apiFetch(`/api/results?id=${encodeURIComponent(deleteResultId)}&organization_id=${encodeURIComponent(ORG_ID)}`, { method: "DELETE" });
+          await loadRemoteData();
+        }
+      }
     });
-    fillJobForm(null); setScreenStep(1); renderAll();
+    bootApp();
   </script>
 </body>
 </html>
