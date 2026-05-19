@@ -36,6 +36,20 @@ def read_json(handler: Any) -> dict[str, Any]:
     return json.loads(handler.rfile.read(length).decode("utf-8"))
 
 
+def clean_text_value(value: str) -> str:
+    return value.replace("\x00", "").replace("\\u0000", "")
+
+
+def sanitize_for_database(value: Any) -> Any:
+    if isinstance(value, str):
+        return clean_text_value(value)
+    if isinstance(value, list):
+        return [sanitize_for_database(item) for item in value]
+    if isinstance(value, dict):
+        return {key: sanitize_for_database(item) for key, item in value.items()}
+    return value
+
+
 def supabase_url(path: str, query: dict[str, str] | None = None) -> str:
     base = env("SUPABASE_URL").rstrip("/")
     if not base:
@@ -65,7 +79,7 @@ def supabase_headers(prefer: str | None = None) -> dict[str, str]:
 def supabase_request(method: str, path: str, data: Any | None = None, query: dict[str, str] | None = None, prefer: str | None = None) -> Any:
     req = urllib.request.Request(
         supabase_url(path, query),
-        data=json.dumps(data, ensure_ascii=False).encode("utf-8") if data is not None else None,
+        data=json.dumps(sanitize_for_database(data), ensure_ascii=False).encode("utf-8") if data is not None else None,
         headers=supabase_headers(prefer),
         method=method,
     )
@@ -92,8 +106,8 @@ def html_to_text(raw: str) -> str:
 def normalize_resume_text(file_name: str, raw_text: str) -> str:
     lower = (file_name or "").lower()
     if lower.endswith((".html", ".htm")) or re.search(r"(?is)<html|<!doctype html|<body|<div|<p", raw_text[:2000]):
-        return html_to_text(raw_text)
-    return raw_text.strip()
+        return clean_text_value(html_to_text(raw_text))
+    return clean_text_value(raw_text.strip())
 
 
 def get_job_bundle(job_id: str) -> dict[str, Any]:
