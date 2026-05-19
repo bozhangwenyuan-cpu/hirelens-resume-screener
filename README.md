@@ -1,110 +1,134 @@
-# HireLens 简历筛选器
+# HireLens Resume Screener
 
-HireLens 是一个面向企业招聘场景的简历筛选原型，包含：
+HireLens is a resume screening SaaS prototype for recruiting teams.
 
-- 招聘岗位管理
-- 结构化人才画像、硬性要求、加分项
-- 简历评测流程
-- 大模型优先的简历筛查后端
-- SQLite 本地数据库
+It supports:
 
-## 本地启动
+- Job management
+- Structured talent persona and screening criteria
+- Resume upload, including BOSS Zhipin HTML resumes
+- DeepSeek-powered resume screening
+- Screening result management
+- Vercel + Supabase SaaS deployment
+- Local SQLite fallback for demos
+
+## Recommended SaaS Architecture
+
+```text
+Vercel
+  - Static web app
+  - Serverless API routes under /api
+
+Supabase
+  - Auth
+  - Postgres
+  - Row Level Security
+  - Optional resume file storage
+
+DeepSeek
+  - LLM screening engine
+```
+
+## Deploy With Vercel + Supabase
+
+### 1. Create Supabase Project
+
+Create a Supabase project, then open SQL Editor and run:
+
+```text
+supabase/schema.sql
+```
+
+This creates:
+
+- organizations
+- organization_members
+- jobs
+- job_personas
+- job_requirements
+- resumes
+- screening_tasks
+- screening_results
+
+### 2. Configure Vercel Environment Variables
+
+In Vercel project settings, add:
+
+```text
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_ANON_KEY=your-supabase-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
+RESUME_SCREENER_LLM_PROVIDER=deepseek
+RESUME_SCREENER_LLM_BASE_URL=https://api.deepseek.com
+RESUME_SCREENER_MODEL=deepseek-v4-flash
+RESUME_SCREENER_LLM_API_KEY=your-deepseek-api-key
+RESUME_SCREENER_LLM_TIMEOUT=60
+```
+
+Never commit real API keys.
+
+### 3. Deploy
+
+Import this GitHub repository into Vercel:
+
+```text
+https://github.com/bozhangwenyuan-cpu/hirelens-resume-screener
+```
+
+Vercel will serve:
+
+- `/` -> web app
+- `/api/health` -> health check
+- `/api/jobs` -> SaaS job API backed by Supabase
+- `/api/screenings` -> DeepSeek screening API backed by Supabase
+- `/api/results` -> screening result API backed by Supabase
+
+## Local Demo Mode
+
+You can still run the original local SQLite backend:
 
 ```powershell
 python resume_screener_backend/app.py
 ```
 
-启动后访问：
+Then open:
 
 ```text
 http://127.0.0.1:8765/
 ```
 
-健康检查：
-
-```text
-http://127.0.0.1:8765/api/health
-```
-
-## 配置 DeepSeek
-
-复制本地配置模板：
+Local config:
 
 ```powershell
 Copy-Item resume_screener_backend/config.example.json resume_screener_backend/config.local.json
 ```
 
-然后编辑：
+Then edit `config.local.json` and add your DeepSeek API key.
 
-```text
-resume_screener_backend/config.local.json
-```
-
-填入：
-
-```json
-{
-  "RESUME_SCREENER_LLM_PROVIDER": "deepseek",
-  "RESUME_SCREENER_LLM_BASE_URL": "https://api.deepseek.com",
-  "RESUME_SCREENER_MODEL": "deepseek-v4-flash",
-  "RESUME_SCREENER_LLM_API_KEY": "你的 DeepSeek API Key",
-  "RESUME_SCREENER_LLM_TIMEOUT": "60"
-}
-```
-
-`config.local.json` 已加入 `.gitignore`，不要提交真实 API Key。
-
-## Docker 部署
-
-准备 `.env`：
+## Docker Local Demo
 
 ```powershell
 Copy-Item .env.example .env
-```
-
-编辑 `.env`，填入 DeepSeek Key，然后运行：
-
-```powershell
 docker compose up -d --build
 ```
 
-访问：
+Local data is stored in:
 
 ```text
-http://localhost:8765/
+./data/resume_screener.sqlite3
 ```
 
-## 主要 API
+## Security Notes
 
-- `GET /api/health`
-- `GET /api/jobs`
-- `POST /api/jobs`
-- `PUT /api/jobs/{job_id}`
-- `DELETE /api/jobs/{job_id}`
-- `POST /api/resumes`
-- `POST /api/screenings`
-- `GET /api/results`
-- `GET /api/results/{result_id}`
+- `SUPABASE_SERVICE_ROLE_KEY` must only be used in Vercel serverless functions, never in browser code.
+- Real DeepSeek keys must only be configured in Vercel environment variables or local ignored config files.
+- `resume_screener_backend/config.local.json`, SQLite databases, logs, and `.env` are ignored by git.
+- Age, gender, marriage, ethnicity, religion, health status, and other sensitive attributes must not affect automatic screening conclusions or scores.
 
-## 发布到 Git
+## Current Status
 
-建议只提交这些核心文件：
+This repository now contains two paths:
 
-- `README.md`
-- `.gitignore`
-- `.env.example`
-- `Dockerfile`
-- `docker-compose.yml`
-- `简历筛选器_MVP原型.html`
-- `resume_screener_backend/app.py`
-- `resume_screener_backend/model_client.py`
-- `resume_screener_backend/run_backend.py`
-- `resume_screener_backend/README.md`
-- `resume_screener_backend/config.example.json`
+- `api/` + `supabase/`: online SaaS direction for Vercel + Supabase + DeepSeek
+- `resume_screener_backend/`: local Python + SQLite demo backend
 
-不要提交：
-
-- `resume_screener_backend/config.local.json`
-- `resume_screener_backend/*.sqlite3`
-- 日志文件
-- Python 缓存

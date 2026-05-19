@@ -1,0 +1,13 @@
+{
+  "functions": {
+    "api/**/*.py": {
+      "runtime": "python3.12"
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/",
+      "destination": "/简历筛选器_MVP原型.html"
+    }
+  ]
+}

@@ -1,0 +1,86 @@
+from __future__ import annotations
+
+from http.server import BaseHTTPRequestHandler
+from urllib.parse import parse_qs, urlparse
+
+from ._utils import json_response, read_json, supabase_request
+
+
+class handler(BaseHTTPRequestHandler):
+    def do_OPTIONS(self) -> None:
+        json_response(self, {"ok": True})
+
+    def do_GET(self) -> None:
+        try:
+            query = parse_qs(urlparse(self.path).query)
+            organization_id = (query.get("organization_id") or [""])[0]
+            if not organization_id:
+                raise ValueError("organization_id 不能为空")
+            jobs = supabase_request(
+                "GET",
+                "jobs",
+                query={
+                    "organization_id": f"eq.{organization_id}",
+                    "select": "*,job_personas(*),job_requirements(*)",
+                    "order": "updated_at.desc",
+                },
+            )
+            json_response(self, {"items": jobs or []})
+        except Exception as exc:
+            json_response(self, {"error": str(exc)}, status=400)
+
+    def do_POST(self) -> None:
+        try:
+            payload = read_json(self)
+            organization_id = payload.get("organization_id")
+            if not organization_id:
+                raise ValueError("organization_id 不能为空")
+            job_rows = supabase_request(
+                "POST",
+                "jobs",
+                {
+                    "organization_id": organization_id,
+                    "title": payload.get("title") or payload.get("name"),
+                    "headcount": payload.get("headcount") or 1,
+                    "arrival_date": payload.get("arrival_date") or payload.get("arrivalDate") or None,
+                    "status": payload.get("status") or "在进行",
+                    "jd_text": payload.get("jd_text") or payload.get("jd") or "",
+                },
+                prefer="return=representation",
+            )
+            job = job_rows[0]
+            persona = payload.get("persona") or {}
+            supabase_request(
+                "POST",
+                "job_personas",
+                {
+                    "job_id": job["id"],
+                    "age_range": persona.get("age_range") or persona.get("ageRange"),
+                    "gender_preference": persona.get("gender_preference") or persona.get("gender") or "不限",
+                    "work_years": persona.get("work_years") or persona.get("workYears"),
+                    "min_education": persona.get("min_education") or persona.get("education") or "不限",
+                    "job_hop_frequency": persona.get("job_hop_frequency") or persona.get("jobHopFreq"),
+                    "persona_keywords": persona.get("persona_keywords") or persona.get("keywords") or [],
+                },
+                prefer="return=representation",
+            )
+            requirements = payload.get("requirements") or []
+            if requirements:
+                rows = []
+                for index, req in enumerate(requirements):
+                    rows.append(
+                        {
+                            "job_id": job["id"],
+                            "type": req.get("type", "must"),
+                            "field_key": req.get("field_key") or req.get("key") or "other",
+                            "field_label": req.get("field_label") or req.get("label") or "要求",
+                            "field_value": req.get("field_value") or req.get("value") or "",
+                            "weight": req.get("weight") or 1,
+                            "is_knockout": bool(req.get("is_knockout") or req.get("isKnockout")),
+                            "sort_order": req.get("sort_order") or index,
+                        }
+                    )
+                supabase_request("POST", "job_requirements", rows, prefer="return=representation")
+            json_response(self, job, status=201)
+        except Exception as exc:
+            json_response(self, {"error": str(exc)}, status=400)
