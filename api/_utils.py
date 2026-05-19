@@ -6,7 +6,9 @@ import re
 import urllib.error
 import urllib.parse
 import urllib.request
+from base64 import b64decode
 from html import unescape
+from io import BytesIO
 from typing import Any
 
 
@@ -103,8 +105,28 @@ def html_to_text(raw: str) -> str:
     return text.strip()
 
 
-def normalize_resume_text(file_name: str, raw_text: str) -> str:
+def pdf_to_text(file_name: str, file_base64: str) -> str:
+    try:
+        from pypdf import PdfReader
+    except ImportError as exc:
+        raise RuntimeError("服务端缺少 PDF 解析依赖 pypdf，请重新部署后再上传 PDF 简历。") from exc
+
+    try:
+        reader = PdfReader(BytesIO(b64decode(file_base64)))
+        pages = [(page.extract_text() or "").strip() for page in reader.pages]
+    except Exception as exc:
+        raise RuntimeError(f"{file_name} 解析失败，请确认文件是可读取的 PDF。") from exc
+
+    text = clean_text_value("\n\n".join(page for page in pages if page).strip())
+    if len(text) < 80:
+        raise RuntimeError(f"{file_name} 未提取到有效文本，可能是扫描件或图片型 PDF。请上传可复制文字的 PDF、HTML 简历，或复制简历正文粘贴评测。")
+    return text
+
+
+def normalize_resume_text(file_name: str, raw_text: str, file_base64: str = "") -> str:
     lower = (file_name or "").lower()
+    if lower.endswith(".pdf") and file_base64:
+        return pdf_to_text(file_name, file_base64)
     if lower.endswith((".html", ".htm")) or re.search(r"(?is)<html|<!doctype html|<body|<div|<p", raw_text[:2000]):
         return clean_text_value(html_to_text(raw_text))
     return clean_text_value(raw_text.strip())

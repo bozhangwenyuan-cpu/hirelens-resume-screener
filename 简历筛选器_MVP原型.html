@@ -256,6 +256,22 @@
     .detail-item { padding: 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--subtle); }
     .detail-item strong { display: block; margin-bottom: 8px; color: #475467; font-size: 13px; }
     .detail-item p { margin: 0; color: #344054; line-height: 1.65; white-space: pre-wrap; font-size: 13px; }
+    .result-review { display: grid; gap: 12px; }
+    .review-panel { overflow: hidden; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
+    .review-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px; border-bottom: 1px solid var(--line); background: #fbfdff; }
+    .review-head h3 { margin: 0; color: var(--ink); font-size: 16px; }
+    .review-head p { margin: 5px 0 0; color: var(--muted); font-size: 13px; }
+    .review-score { min-width: 86px; text-align: right; }
+    .review-score strong { display: block; color: var(--ink); font-size: 34px; line-height: 1; }
+    .analysis-list { display: grid; }
+    .analysis-row { display: grid; grid-template-columns: 92px 1fr; gap: 12px; padding: 13px 16px; border-bottom: 1px solid var(--line); }
+    .analysis-row:last-child { border-bottom: 0; }
+    .analysis-row p { margin: 0; color: #344054; font-size: 13px; line-height: 1.65; white-space: pre-wrap; }
+    .analysis-label { display: inline-flex; justify-content: center; align-items: center; height: 24px; border-radius: 999px; font-size: 12px; font-weight: 800; }
+    .analysis-label.pass { color: #047857; background: #dff8e9; }
+    .analysis-label.warn { color: #92400e; background: #fef3c7; }
+    .analysis-label.fail { color: #b42318; background: #fee4e2; }
+    .analysis-label.ask { color: #1d4ed8; background: #dbeafe; }
 
     .searchbar { display: grid; grid-template-columns: minmax(220px, 1fr) 170px 190px; gap: 10px; width: min(780px, 100%); }
     .empty {
@@ -281,7 +297,7 @@
       .topbar { height: auto; align-items: flex-start; flex-direction: column; padding: 14px 16px; }
       .content { padding: 18px 16px 28px; }
       .page-head { flex-direction: column; }
-      .metric-strip, .progress, .detail-grid, .row, .row-3, .searchbar, .schema-grid, .nav { grid-template-columns: 1fr; }
+      .metric-strip, .progress, .detail-grid, .analysis-row, .row, .row-3, .searchbar, .schema-grid, .nav { grid-template-columns: 1fr; }
       .step { border-right: 0; border-bottom: 1px solid var(--line); }
       .step:last-child { border-bottom: 0; }
     }
@@ -739,7 +755,7 @@ created_at</pre></div>
       $("resultJob").innerHTML = `<option value="">全部岗位</option>` + state.jobs.map((job) => `<option value="${escapeHtml(job.name)}">${escapeHtml(job.name)}</option>`).join("");
     }
     function renderPendingResumes() {
-      $("batchList").innerHTML = pendingResumes.map((resume, index) => `<div class="resume-card"><div><strong>${escapeHtml(resume.candidateName)}</strong><span>${escapeHtml(resume.resumeName)} · ${resume.resumeText.length} 字</span></div><button class="small-btn" data-remove-resume="${index}" type="button">移除</button></div>`).join("");
+      $("batchList").innerHTML = pendingResumes.map((resume, index) => `<div class="resume-card"><div><strong>${escapeHtml(resume.candidateName)}</strong><span>${escapeHtml(resume.resumeName)} · ${resume.fileType === "pdf" ? "PDF 待解析" : resume.resumeText.length + " 字"}</span></div><button class="small-btn" data-remove-resume="${index}" type="button">移除</button></div>`).join("");
     }
     function setScreenStep(step) {
       activeStep = step;
@@ -754,9 +770,24 @@ created_at</pre></div>
     }
     async function collectUploadedFiles(files) {
       pendingResumes = [];
-      for (const file of files) pendingResumes.push({ candidateName: cleanName(file.name), resumeName: file.name, resumeText: await file.text() });
+      for (const file of files) {
+        const isPdf = file.name.toLowerCase().endsWith(".pdf") || file.type === "application/pdf";
+        if (isPdf) {
+          pendingResumes.push({ candidateName: cleanName(file.name), resumeName: file.name, resumeText: "", fileBase64: await readFileBase64(file), fileType: "pdf" });
+        } else {
+          pendingResumes.push({ candidateName: cleanName(file.name), resumeName: file.name, resumeText: await file.text(), fileType: "text" });
+        }
+      }
       $("fileName").textContent = pendingResumes.length ? `已选择 ${pendingResumes.length} 份简历` : "选择本地文本简历文件";
       renderPendingResumes(); updateConfirmBox();
+    }
+    function readFileBase64(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result || "").split(",")[1] || "");
+        reader.onerror = () => reject(new Error("文件读取失败"));
+        reader.readAsDataURL(file);
+      });
     }
     function runScreening() {
       const job = state.jobs.find((item) => item.id === $("screenJob").value);
@@ -986,7 +1017,8 @@ created_at</pre></div>
             resumes: resumes.map((resume) => ({
               candidate_name: resume.candidateName,
               resume_name: resume.resumeName,
-              resume_text: resume.resumeText
+              resume_text: resume.resumeText || "",
+              file_base64: resume.fileBase64 || ""
             }))
           })
         });
@@ -1010,7 +1042,16 @@ created_at</pre></div>
       }
     }
     function resultBlock(item) {
-      return `<div class="result-summary" style="margin-bottom:16px"><div class="score-card"><span class="pill ${conclusionClass(item.conclusion)}">${escapeHtml(item.conclusion)}</span><div class="score">${item.score}</div><div class="entity"><strong>${escapeHtml(item.candidateName)}</strong><span>${escapeHtml(item.jobName)} · ${escapeHtml(item.resumeName)}</span></div>${item.summary ? `<p class="ai-status">${escapeHtml(item.summary)}</p>` : ""}</div><div class="detail-grid"><div class="detail-item"><strong>AI 匹配依据</strong><p>${escapeHtml((item.matched.length ? item.matched : ["未识别到明确满足项"]).join("\n"))}</p></div><div class="detail-item"><strong>缺失或不明确</strong><p>${escapeHtml((item.missing.length ? item.missing : ["暂无明显缺失项"]).join("\n"))}</p></div><div class="detail-item"><strong>风险点</strong><p>${escapeHtml((item.risks.length ? item.risks : ["暂无明显风险信号，建议人工复核关键经历。"]).join("\n"))}</p></div><div class="detail-item"><strong>建议追问</strong><p>${escapeHtml((item.questions.length ? item.questions : ["请候选人说明最能代表岗位能力的项目经历。"]).join("\n"))}</p></div></div></div>`;
+      const rows = [
+        ...analysisRows("pass", "已满足", item.matched.length ? item.matched : ["未识别到明确满足项"]),
+        ...analysisRows("fail", "缺失项", item.missing.length ? item.missing : ["暂无明显缺失项"]),
+        ...analysisRows("warn", "风险", item.risks.length ? item.risks : ["暂无明显风险信号，建议人工复核关键经历。"]),
+        ...analysisRows("ask", "追问", item.questions.length ? item.questions : ["请候选人说明最能代表岗位能力的项目经历。"])
+      ].join("");
+      return `<div class="result-review" style="margin-bottom:16px"><section class="review-panel"><div class="review-head"><div><span class="pill ${conclusionClass(item.conclusion)}">${escapeHtml(item.conclusion)}</span><h3>${escapeHtml(item.candidateName)}</h3><p>${escapeHtml(item.jobName)} · ${escapeHtml(item.resumeName)}</p></div><div class="review-score"><strong>${item.score}</strong><span>综合分</span></div></div>${item.summary ? `<div class="ai-status" style="margin:12px 16px">${escapeHtml(item.summary)}</div>` : ""}<div class="analysis-list">${rows}</div></section></div>`;
+    }
+    function analysisRows(type, label, items) {
+      return items.map((text) => `<div class="analysis-row"><span class="analysis-label ${type}">${label}</span><p>${escapeHtml(text)}</p></div>`);
     }
     async function bootApp() {
       fillJobForm(null);

@@ -50,6 +50,7 @@ class handler(BaseHTTPRequestHandler):
                 parsed_text = normalize_resume_text(
                     file_name,
                     item.get("parsed_text") or item.get("resume_text") or item.get("resumeText") or "",
+                    item.get("file_base64") or item.get("fileBase64") or "",
                 )
                 resume_rows = supabase_request(
                     "POST",
