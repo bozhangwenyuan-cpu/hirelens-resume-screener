@@ -38,6 +38,10 @@ def read_json(handler: Any) -> dict[str, Any]:
 
 def supabase_url(path: str, query: dict[str, str] | None = None) -> str:
     base = env("SUPABASE_URL").rstrip("/")
+    if not base:
+        raise RuntimeError("缺少 Vercel 环境变量 SUPABASE_URL，请在 Vercel Project Settings -> Environment Variables 中配置 Supabase Project URL 后重新部署。")
+    if not base.startswith(("http://", "https://")):
+        raise RuntimeError("SUPABASE_URL 格式不正确，必须类似 https://xxxx.supabase.co")
     url = f"{base}/rest/v1/{path.lstrip('/')}"
     if query:
         url += "?" + urllib.parse.urlencode(query)
@@ -46,6 +50,8 @@ def supabase_url(path: str, query: dict[str, str] | None = None) -> str:
 
 def supabase_headers(prefer: str | None = None) -> dict[str, str]:
     key = env("SUPABASE_SERVICE_ROLE_KEY")
+    if not key:
+        raise RuntimeError("缺少 Vercel 环境变量 SUPABASE_SERVICE_ROLE_KEY，请在 Vercel Project Settings -> Environment Variables 中配置 Supabase Secret/Service Role Key 后重新部署。")
     headers = {
         "apikey": key,
         "Authorization": f"Bearer {key}",
