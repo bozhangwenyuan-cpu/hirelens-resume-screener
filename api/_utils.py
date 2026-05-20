@@ -138,7 +138,7 @@ def image_to_text(file_name: str, file_base64: str, mime_type: str, skill: dict[
         raise RuntimeError("缺少图片解析 API Key。请配置 RESUME_SCREENER_VISION_API_KEY 或 OPENAI_API_KEY。")
     model = env("RESUME_SCREENER_VISION_MODEL", "").strip()
     if not model:
-        raise RuntimeError(f"{file_name} 是图片文件。当前部署尚未配置图片解析模型 RESUME_SCREENER_VISION_MODEL，请配置支持图片识别的 GPT 模型，或先上传 PDF/HTML/文本简历。")
+        raise RuntimeError(f"{file_name} 是图片文件。当前部署尚未配置图片解析模型 RESUME_SCREENER_VISION_MODEL，请配置支持图片识别的视觉模型，或先上传 PDF/HTML/文本简历。")
 
     base_url = env("RESUME_SCREENER_VISION_BASE_URL", "https://api.openai.com/v1").rstrip("/")
     payload = {
