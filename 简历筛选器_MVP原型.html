@@ -1518,7 +1518,7 @@ created_at</pre></div>
         makeRequirement(reqType("bonusLanguage"), "language", "语言能力", job.bonus.language, reqType("bonusLanguage") === "must", 103),
         makeRequirement(reqType("bonusManagement"), "management", "管理经验", job.bonus.management, reqType("bonusManagement") === "must", 104),
         ...lines(job.bonus.other).map((value, index) => makeRequirement(reqType("niceHave"), "other_" + index, "其他优先要求", value, reqType("niceHave") === "must", 120 + index))
-      ].filter((item) => String(item.field_value || "").trim());
+      ].filter((item) => item.type !== "reference" && String(item.field_value || "").trim());
       return {
         organization_id: ORG_ID,
         id: uuidPattern.test(job.id) ? job.id : undefined,
