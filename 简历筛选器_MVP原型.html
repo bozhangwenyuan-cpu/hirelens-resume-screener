@@ -386,10 +386,15 @@
     .app.sidebar-collapsed { grid-template-columns: 64px minmax(0, 1fr); }
     .main { background: var(--bg); }
     .sidebar { background: #ffffff; border-right-color: #f0f0f0; }
-    .brand { padding: 18px 16px 14px; border-bottom: 0; }
+    .brand { padding: 18px 16px 14px; border-bottom: 0; display: grid; grid-template-columns: 32px minmax(0, 1fr) 32px; gap: 10px; align-items: start; }
     .brand-mark { width: 32px; height: 32px; margin-bottom: 10px; border-radius: 9px; background: #2f2b26; font-size: 14px; }
     .brand h1 { font-size: 18px; letter-spacing: 0; }
     .brand p { max-width: 150px; color: #999999; font-size: 12px; line-height: 1.45; }
+    .brand-collapse {
+      width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center;
+      border: 1px solid #e4ded5; border-radius: 8px; color: #6f675e; background: #fff; font-size: 13px; font-weight: 900;
+    }
+    .brand-collapse:hover { color: #2f2b26; border-color: #d2c7ba; background: #fbfaf7; }
     .nav { padding: 8px; gap: 2px; }
     .nav-btn {
       min-height: 42px; grid-template-columns: 26px 1fr; gap: 8px;
@@ -401,9 +406,11 @@
     .nav-btn.active { border-color: transparent; background: var(--brand-soft); color: #2a2a2a; }
     .nav-btn.active .icon { background: transparent; color: var(--brand-ink, #2a9d6a); }
     .nav-btn:hover { background: #f7f8fa; }
-    .sidebar-tools { margin-top: auto; padding: 10px 8px; border-top: 1px solid #f0f0f0; border-bottom: 0; }
+    .sidebar-tools { display: none; margin-top: auto; padding: 10px 8px; border-top: 1px solid #f0f0f0; border-bottom: 0; }
     .sidebar-tool-btn { height: 34px; border-color: #f0f0f0; background: transparent; color: #666666; font-size: 12px; }
-    .app.sidebar-collapsed .brand { padding: 16px; }
+    .app.sidebar-collapsed .brand { grid-template-columns: 1fr; justify-items: center; padding: 16px; }
+    .app.sidebar-collapsed .brand-copy { display: none; }
+    .app.sidebar-collapsed .brand-collapse { width: 32px; height: 32px; }
     .app.sidebar-collapsed .nav { padding: 8px 6px; }
     .app.sidebar-collapsed .nav-btn { min-height: 42px; padding: 7px 0; border-radius: 10px; }
     .app.sidebar-collapsed .nav-btn.active { background: var(--brand-soft); }
@@ -415,7 +422,7 @@
     }
     .crumb { color: #8a919b; font-size: 13px; }
     .crumb strong { color: #323842; font-size: 14px; font-weight: 750; }
-    .content { width: min(1180px, 100%); margin: 0 auto; padding: 30px 32px 56px; }
+    .content { width: min(1360px, 100%); margin: 0 auto; padding: 30px 36px 56px; }
     .page-head { align-items: center; margin-bottom: 22px; }
     .page-title h2 { margin-bottom: 8px; font-size: 25px; font-weight: 760; letter-spacing: 0; }
     .page-title p { max-width: 680px; color: #707782; line-height: 1.7; font-size: 14px; }
@@ -433,6 +440,10 @@
       min-height: 74px; padding: 14px 16px; border-color: #f0f0f0;
       border-radius: 12px; background: #fff;
     }
+    .metric:nth-child(1) { background: linear-gradient(180deg, #fff 0%, #f7fbff 100%); border-color: #dce9f7; }
+    .metric:nth-child(2) { background: linear-gradient(180deg, #fff 0%, #f2fbf6 100%); border-color: #d5eee0; }
+    .metric:nth-child(3) { background: linear-gradient(180deg, #fff 0%, #fff9ef 100%); border-color: #f0e1c8; }
+    .metric:nth-child(4) { background: linear-gradient(180deg, #fff 0%, #f8f5ff 100%); border-color: #e3daf5; }
     .metric span { color: #7d8590; font-size: 12px; font-weight: 650; }
     .metric strong { font-size: 28px; font-weight: 760; letter-spacing: 0; }
 
@@ -497,7 +508,7 @@
     .grid-form input, .grid-form select, .grid-form textarea { width: 100%; }
     .job-preview-aside { display: none; }
     .table-wrap { overflow-x: auto; }
-    table { width: max-content; min-width: 100%; table-layout: auto; }
+    table { width: 100%; min-width: 1180px; table-layout: auto; }
     th, td { max-width: 260px; }
     td { overflow: hidden; }
     th { min-width: 112px; }
@@ -517,10 +528,11 @@
     <aside class="sidebar">
       <div class="brand">
         <div class="brand-mark">LH</div>
-        <div>
+        <div class="brand-copy">
           <h1>Lumy-HR</h1>
           <p>AI 招聘评测工作台</p>
         </div>
+        <button class="brand-collapse" id="toggleSidebar" type="button" aria-label="收起导航">⇤</button>
       </div>
       <nav class="nav">
         <button class="nav-btn active" data-page="jobsPage" type="button"><span class="icon">岗</span><span><strong>招聘岗位</strong><span>岗位池与招聘状态</span></span></button>
@@ -529,9 +541,6 @@
         <button class="nav-btn" data-page="resultsPage" type="button"><span class="icon">库</span><span><strong>结果管理</strong><span>候选人评测记录</span></span></button>
         <button class="nav-btn" data-page="databasePage" type="button"><span class="icon">数</span><span><strong>数据方案</strong><span>数据库表与存储设计</span></span></button>
       </nav>
-      <div class="sidebar-tools">
-        <button class="sidebar-tool-btn" id="toggleSidebar" type="button"><span>⇤</span><span class="sidebar-tool-text">收起导航</span></button>
-      </div>
       <div class="sidebar-footer"><button class="btn danger" id="resetData" type="button">清空演示数据</button></div>
     </aside>
 
@@ -628,6 +637,7 @@
                   </div>
                   <div class="row-3">
                     <div class="field persona-field"><label for="education">最低学历</label><select id="education"><option>不限</option><option>大专</option><option>本科</option><option>硕士</option><option>博士</option></select><select id="educationPolicy" class="policy-select"><option value="reference">参考项</option><option value="must">硬性要求</option><option value="bonus">加分项</option></select></div>
+                    <div class="field persona-field"><label for="firstDegree">第一学历</label><select id="firstDegree"><option>不限</option><option>C9</option><option>985</option><option>211</option><option>国内本科</option><option>欧美名校</option></select><select id="firstDegreePolicy" class="policy-select"><option value="reference">参考项</option><option value="must">硬性要求</option><option value="bonus">加分项</option></select></div>
                     <div class="field persona-field"><label for="jobHopFreq">跳槽频率</label><input id="jobHopFreq" placeholder="如：近 5 年不超过 2 次"><select id="jobHopFreqPolicy" class="policy-select"><option value="reference">参考项</option><option value="must">硬性要求</option><option value="bonus">加分项</option></select></div>
                     <div class="field persona-field"><label for="personaKeywords">画像关键词</label><input id="personaKeywords" placeholder="如：大客户、方案销售、抗压"><select id="personaKeywordsPolicy" class="policy-select"><option value="reference">参考项</option><option value="must">硬性要求</option><option value="bonus">加分项</option></select></div>
                   </div>
@@ -957,11 +967,11 @@ created_at</pre></div>
     function makeId(prefix) { return prefix + "_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 7); }
     function lines(value) { return String(value || "").split(/\n|；|;/).map((item) => item.trim()).filter(Boolean); }
     function splitTags(value) { return String(value || "").split(/,|，|、|\n|;/).map((item) => item.trim()).filter(Boolean); }
-    const personaPolicyFields = ["ageRange", "gender", "workYears", "education", "jobHopFreq", "personaKeywords", "mustYears", "mustIndustry", "mustSkills", "mustCert", "mustHave", "bonusResources", "bonusTools", "bonusLanguage", "bonusManagement", "niceHave", "personalityType", "communication", "leaveReason"];
-    const personaLabels = { ageRange: "年龄", gender: "性别", workYears: "工作时间", education: "最低学历", jobHopFreq: "跳槽频率", personaKeywords: "画像关键词", mustYears: "经验年限", mustIndustry: "行业经验", mustSkills: "核心技能", mustCert: "证书/资质", mustHave: "其他能力要求", bonusResources: "资源/客户", bonusTools: "工具/系统", bonusLanguage: "语言能力", bonusManagement: "管理/协作", niceHave: "其他优先要求", personalityType: "性格特征", communication: "沟通能力", leaveReason: "离职原因" };
+    const personaPolicyFields = ["ageRange", "gender", "workYears", "education", "firstDegree", "jobHopFreq", "personaKeywords", "mustYears", "mustIndustry", "mustSkills", "mustCert", "mustHave", "bonusResources", "bonusTools", "bonusLanguage", "bonusManagement", "niceHave", "personalityType", "communication", "leaveReason"];
+    const personaLabels = { ageRange: "年龄", gender: "性别", workYears: "工作时间", education: "最低学历", firstDegree: "第一学历", jobHopFreq: "跳槽频率", personaKeywords: "画像关键词", mustYears: "经验年限", mustIndustry: "行业经验", mustSkills: "核心技能", mustCert: "证书/资质", mustHave: "其他能力要求", bonusResources: "资源/客户", bonusTools: "工具/系统", bonusLanguage: "语言能力", bonusManagement: "管理/协作", niceHave: "其他优先要求", personalityType: "性格特征", communication: "沟通能力", leaveReason: "离职原因" };
     const policyLabels = { must: "硬性要求", bonus: "加分项", reference: "参考项" };
     function defaultPersonaPolicy() {
-      return { ageRange: "reference", gender: "reference", workYears: "must", education: "must", jobHopFreq: "reference", personaKeywords: "bonus", mustYears: "must", mustIndustry: "must", mustSkills: "must", mustCert: "reference", mustHave: "must", bonusResources: "bonus", bonusTools: "bonus", bonusLanguage: "bonus", bonusManagement: "bonus", niceHave: "bonus", personalityType: "reference", communication: "bonus", leaveReason: "reference" };
+      return { ageRange: "reference", gender: "reference", workYears: "must", education: "must", firstDegree: "reference", jobHopFreq: "reference", personaKeywords: "bonus", mustYears: "must", mustIndustry: "must", mustSkills: "must", mustCert: "reference", mustHave: "must", bonusResources: "bonus", bonusTools: "bonus", bonusLanguage: "bonus", bonusManagement: "bonus", niceHave: "bonus", personalityType: "reference", communication: "bonus", leaveReason: "reference" };
     }
     function personaValues(job, key) {
       const p = job.persona || {};
@@ -972,6 +982,7 @@ created_at</pre></div>
         gender: p.gender,
         workYears: p.workYears,
         education: p.education,
+        firstDegree: p.firstDegree,
         jobHopFreq: p.jobHopFreq,
         personaKeywords: p.keywords,
         mustYears: must.years,
@@ -1020,7 +1031,7 @@ created_at</pre></div>
     }
     function personaText(job) {
       const p = job.persona || {};
-      return `年龄：${p.ageRange || "不限"}；性别：${p.gender || "不限"}；工作时间：${p.workYears || "未设置"}；最低学历：${p.education || "不限"}；性格：${p.personalityType || "不限"}；沟通：${p.communication || "不限"}`;
+      return `年龄：${p.ageRange || "不限"}；性别：${p.gender || "不限"}；工作时间：${p.workYears || "未设置"}；最低学历：${p.education || "不限"}；第一学历：${p.firstDegree || "不限"}；性格：${p.personalityType || "不限"}；沟通：${p.communication || "不限"}`;
     }
     function previewItems(title, values) {
       const items = values.filter(Boolean);
@@ -1045,6 +1056,7 @@ created_at</pre></div>
         `性别：${p.gender || "不限"}（${policyLabels[policy.gender]}）`,
         `工作时间：${p.workYears || "未设置"}（${policyLabels[policy.workYears]}）`,
         `最低学历：${p.education || "不限"}（${policyLabels[policy.education]}）`,
+        `第一学历：${p.firstDegree || "不限"}（${policyLabels[policy.firstDegree]}）`,
         `跳槽频率：${p.jobHopFreq || "未设置"}（${policyLabels[policy.jobHopFreq]}）`,
         `画像关键词：${p.keywords || "未设置"}（${policyLabels[policy.personaKeywords]}）`,
         `性格特征：${p.personalityType || "不限"}（${policyLabels[policy.personalityType]}）`,
@@ -1115,7 +1127,7 @@ created_at</pre></div>
       personaPolicyFields.forEach((key) => { policy[key] = $(`${key}Policy`).value; });
       return {
         id: $("jobId").value || makeId("job"), name: $("jobName").value.trim(), headcount: Number($("headcount").value || 1), arrivalDate: $("arrivalDate").value, status: $("jobStatus").value, jd: $("jd").value.trim(),
-        persona: { ageRange: $("ageRange").value.trim(), gender: $("gender").value, workYears: $("workYears").value.trim(), education: $("education").value, jobHopFreq: $("jobHopFreq").value.trim(), keywords: $("personaKeywords").value.trim(), personalityType: $("personalityType").value, communication: $("communication").value, leaveReason: $("leaveReason").value.trim(), policy },
+        persona: { ageRange: $("ageRange").value.trim(), gender: $("gender").value, workYears: $("workYears").value.trim(), education: $("education").value, firstDegree: $("firstDegree").value, jobHopFreq: $("jobHopFreq").value.trim(), keywords: $("personaKeywords").value.trim(), personalityType: $("personalityType").value, communication: $("communication").value, leaveReason: $("leaveReason").value.trim(), policy },
         must: { years: $("mustYears").value.trim(), industry: $("mustIndustry").value.trim(), skills: $("mustSkills").value.trim(), cert: $("mustCert").value.trim(), other: $("mustHave").value.trim() },
         bonus: { resources: $("bonusResources").value.trim(), tools: $("bonusTools").value.trim(), language: $("bonusLanguage").value.trim(), management: $("bonusManagement").value.trim(), other: $("niceHave").value.trim() }
       };
@@ -1124,7 +1136,7 @@ created_at</pre></div>
       const p = job?.persona || {}, m = job?.must || {}, b = job?.bonus || {};
       const policy = { ...defaultPersonaPolicy(), ...(p.policy || {}) };
       $("jobId").value = job?.id || ""; $("jobName").value = job?.name || ""; $("headcount").value = job?.headcount || 1; $("arrivalDate").value = job?.arrivalDate || ""; $("jobStatus").value = job?.status || "在进行"; $("jd").value = job?.jd || "";
-      $("ageRange").value = p.ageRange || ""; $("gender").value = p.gender || "不限"; $("workYears").value = p.workYears || ""; $("education").value = p.education || "不限"; $("jobHopFreq").value = p.jobHopFreq || ""; $("personaKeywords").value = p.keywords || ""; $("personalityType").value = p.personalityType || "不限"; $("communication").value = p.communication || "不限"; $("leaveReason").value = p.leaveReason || "";
+      $("ageRange").value = p.ageRange || ""; $("gender").value = p.gender || "不限"; $("workYears").value = p.workYears || ""; $("education").value = p.education || "不限"; $("firstDegree").value = p.firstDegree || "不限"; $("jobHopFreq").value = p.jobHopFreq || ""; $("personaKeywords").value = p.keywords || ""; $("personalityType").value = p.personalityType || "不限"; $("communication").value = p.communication || "不限"; $("leaveReason").value = p.leaveReason || "";
       personaPolicyFields.forEach((key) => { $(`${key}Policy`).value = policy[key] || "reference"; });
       $("mustYears").value = m.years || ""; $("mustIndustry").value = m.industry || ""; $("mustSkills").value = m.skills || ""; $("mustCert").value = m.cert || ""; $("mustHave").value = m.other || "";
       $("bonusResources").value = b.resources || ""; $("bonusTools").value = b.tools || ""; $("bonusLanguage").value = b.language || ""; $("bonusManagement").value = b.management || ""; $("niceHave").value = b.other || "";
@@ -1467,6 +1479,7 @@ created_at</pre></div>
           education: persona.min_education || "不限",
           jobHopFreq: persona.job_hop_frequency || "",
           keywords: Array.isArray(keywordList) ? keywordList.join("、") : keywordList || "",
+          firstDegree: keywordPayload.first_degree || "不限",
           personalityType: keywordPayload.personality_type || "不限",
           communication: keywordPayload.communication || "不限",
           leaveReason: keywordPayload.leave_reason || "",
@@ -1520,7 +1533,7 @@ created_at</pre></div>
           work_years: job.persona.workYears,
           min_education: job.persona.education,
           job_hop_frequency: job.persona.jobHopFreq,
-          persona_keywords: { keywords: splitTags(job.persona.keywords), policy: job.persona.policy || {}, personality_type: job.persona.personalityType, communication: job.persona.communication, leave_reason: job.persona.leaveReason }
+          persona_keywords: { keywords: splitTags(job.persona.keywords), policy: job.persona.policy || {}, first_degree: job.persona.firstDegree, personality_type: job.persona.personalityType, communication: job.persona.communication, leave_reason: job.persona.leaveReason }
         },
         requirements
       };
@@ -1742,15 +1755,15 @@ created_at</pre></div>
     document.querySelectorAll("[data-step-indicator]").forEach((step) => step.addEventListener("click", () => setScreenStep(Number(step.dataset.stepIndicator))));
     $("toggleSidebar").addEventListener("click", () => {
       $("appShell").classList.toggle("sidebar-collapsed");
-      $("toggleSidebar").innerHTML = $("appShell").classList.contains("sidebar-collapsed")
-        ? "<span>⇥</span><span class=\"sidebar-tool-text\">展开导航</span>"
-        : "<span>⇤</span><span class=\"sidebar-tool-text\">收起导航</span>";
+      const collapsed = $("appShell").classList.contains("sidebar-collapsed");
+      $("toggleSidebar").textContent = collapsed ? "⇥" : "⇤";
+      $("toggleSidebar").setAttribute("aria-label", collapsed ? "展开导航" : "收起导航");
     });
     $("createJobBtn").addEventListener("click", () => { fillJobForm(null); setPage("jobEditPage"); });
     $("previewCurrentJob").addEventListener("click", () => openRequirementPreview(collectJobForm()));
     $("closeRequirementModal").addEventListener("click", () => { $("requirementModal").hidden = true; });
     $("requirementModal").addEventListener("click", (event) => { if (event.target.id === "requirementModal") $("requirementModal").hidden = true; });
-    ["jobName", "headcount", "arrivalDate", "jobStatus", "jd", "ageRange", "gender", "workYears", "education", "jobHopFreq", "personaKeywords", "personalityType", "communication", "leaveReason", "ageRangePolicy", "genderPolicy", "workYearsPolicy", "educationPolicy", "jobHopFreqPolicy", "personaKeywordsPolicy", "mustYearsPolicy", "mustIndustryPolicy", "mustSkillsPolicy", "mustCertPolicy", "mustHavePolicy", "bonusResourcesPolicy", "bonusToolsPolicy", "bonusLanguagePolicy", "bonusManagementPolicy", "niceHavePolicy", "personalityTypePolicy", "communicationPolicy", "leaveReasonPolicy", "mustYears", "mustIndustry", "mustSkills", "mustCert", "mustHave", "bonusResources", "bonusTools", "bonusLanguage", "bonusManagement", "niceHave"].forEach((id) => {
+    ["jobName", "headcount", "arrivalDate", "jobStatus", "jd", "ageRange", "gender", "workYears", "education", "firstDegree", "jobHopFreq", "personaKeywords", "personalityType", "communication", "leaveReason", "ageRangePolicy", "genderPolicy", "workYearsPolicy", "educationPolicy", "firstDegreePolicy", "jobHopFreqPolicy", "personaKeywordsPolicy", "mustYearsPolicy", "mustIndustryPolicy", "mustSkillsPolicy", "mustCertPolicy", "mustHavePolicy", "bonusResourcesPolicy", "bonusToolsPolicy", "bonusLanguagePolicy", "bonusManagementPolicy", "niceHavePolicy", "personalityTypePolicy", "communicationPolicy", "leaveReasonPolicy", "mustYears", "mustIndustry", "mustSkills", "mustCert", "mustHave", "bonusResources", "bonusTools", "bonusLanguage", "bonusManagement", "niceHave"].forEach((id) => {
       $(id).addEventListener("input", renderRequirementPreview);
       $(id).addEventListener("change", renderRequirementPreview);
     });

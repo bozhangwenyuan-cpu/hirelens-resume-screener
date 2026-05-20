@@ -252,6 +252,7 @@ def get_job_bundle(job_id: str) -> dict[str, Any]:
         "gender": ("性别", persona.get("gender_preference")),
         "workYears": ("工作时间", persona.get("work_years")),
         "education": ("最低学历", persona.get("min_education")),
+        "firstDegree": ("第一学历", keyword_payload.get("first_degree") if isinstance(keyword_payload, dict) else ""),
         "jobHopFreq": ("跳槽频率", persona.get("job_hop_frequency")),
         "personaKeywords": ("画像关键词", "、".join(persona.get("persona_keywords") or []) if isinstance(persona.get("persona_keywords"), list) else persona.get("persona_keywords")),
         "personalityType": ("性格特征", keyword_payload.get("personality_type") if isinstance(keyword_payload, dict) else ""),
