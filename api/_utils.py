@@ -12,7 +12,16 @@ from io import BytesIO
 from typing import Any
 
 
-PROMPT_VERSION = "resume-screening-saas-v2"
+PROMPT_VERSION = "resume-screening-saas-v3"
+
+
+SKILL_PROMPTS = {
+    "balanced": "采用均衡筛选方法：硬性要求、职责匹配、稳定性风险和加分项都要纳入，适合大多数岗位初筛。",
+    "strict": "采用强硬性要求筛选方法：只要关键硬性要求缺失或无法证明，就明显降低分数；不确定时倾向人工复核或不匹配。",
+    "potential": "采用潜力识别方法：允许候选人部分经历不完全对口，但要重点寻找迁移能力、学习能力、复杂项目经验和成长曲线。",
+    "sales": "采用销售岗位筛选方法：重点检查客户开发、业绩数字、客单价、销售周期、回款、行业资源、抗压和稳定性。",
+    "product": "采用产品岗位筛选方法：重点检查需求分析、PRD/原型、项目推进、数据/AI理解、跨部门协作和业务抽象能力。",
+}
 
 
 def env(name: str, default: str = "") -> str:
@@ -123,10 +132,54 @@ def pdf_to_text(file_name: str, file_base64: str) -> str:
     return text
 
 
-def normalize_resume_text(file_name: str, raw_text: str, file_base64: str = "") -> str:
+def image_to_text(file_name: str, file_base64: str, mime_type: str, skill: dict[str, Any] | None = None) -> str:
+    api_key = env("RESUME_SCREENER_LLM_API_KEY")
+    if not api_key:
+        raise RuntimeError("缺少 RESUME_SCREENER_LLM_API_KEY")
+    model = env("RESUME_SCREENER_VISION_MODEL", "").strip()
+    if not model:
+        raise RuntimeError(f"{file_name} 是图片文件。当前部署尚未配置图片解析模型 RESUME_SCREENER_VISION_MODEL，请配置支持图片识别的模型，或先上传 PDF/HTML/文本简历。")
+
+    base_url = env("RESUME_SCREENER_LLM_BASE_URL", "https://api.deepseek.com").rstrip("/")
+    payload = {
+        "model": model,
+        "temperature": 0,
+        "messages": [
+            {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": "请从这张图片简历中提取可用于招聘评测的纯文本。只输出简历正文，不要评价。"},
+                    {"type": "image_url", "image_url": {"url": f"data:{mime_type or 'image/png'};base64,{file_base64}"}},
+                ],
+            }
+        ],
+    }
+    req = urllib.request.Request(
+        f"{base_url}/chat/completions",
+        data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
+        headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=int(env("RESUME_SCREENER_LLM_TIMEOUT", "60"))) as resp:
+            raw = json.loads(resp.read().decode("utf-8"))
+    except urllib.error.HTTPError as exc:
+        detail = exc.read().decode("utf-8", errors="ignore")
+        raise RuntimeError(f"图片解析模型调用失败 {exc.code}: {detail}") from exc
+    text = clean_text_value(raw["choices"][0]["message"]["content"].strip())
+    if len(text) < 50:
+        raise RuntimeError(f"{file_name} 未提取到有效简历文本，请确认图片清晰，或改用文本/PDF/HTML 简历。")
+    return text
+
+
+def normalize_resume_text(file_name: str, raw_text: str, file_base64: str = "", mime_type: str = "", skill: dict[str, Any] | None = None) -> str:
     lower = (file_name or "").lower()
     if lower.endswith(".pdf") and file_base64:
         return pdf_to_text(file_name, file_base64)
+    if (mime_type or "").startswith("image/") or lower.endswith((".png", ".jpg", ".jpeg", ".webp", ".bmp")):
+        if not file_base64:
+            raise RuntimeError(f"{file_name} 是图片文件，但没有收到图片内容。")
+        return image_to_text(file_name, file_base64, mime_type, skill)
     if lower.endswith((".html", ".htm")) or re.search(r"(?is)<html|<!doctype html|<body|<div|<p", raw_text[:2000]):
         return clean_text_value(html_to_text(raw_text))
     return clean_text_value(raw_text.strip())
@@ -146,13 +199,26 @@ def get_job_bundle(job_id: str) -> dict[str, Any]:
     return job
 
 
-def call_deepseek(job: dict[str, Any], resume: dict[str, Any]) -> dict[str, Any]:
+def normalize_skill(skill: Any) -> dict[str, str]:
+    if not isinstance(skill, dict):
+        skill = {}
+    skill_id = str(skill.get("id") or skill.get("skill_id") or "balanced")
+    custom = str(skill.get("custom") or skill.get("custom_prompt") or "").strip()
+    return {
+        "id": skill_id,
+        "name": str(skill.get("name") or skill_id),
+        "instruction": custom or SKILL_PROMPTS.get(skill_id, SKILL_PROMPTS["balanced"]),
+    }
+
+
+def call_deepseek(job: dict[str, Any], resume: dict[str, Any], skill: Any = None) -> dict[str, Any]:
     api_key = env("RESUME_SCREENER_LLM_API_KEY")
     if not api_key:
         raise RuntimeError("缺少 RESUME_SCREENER_LLM_API_KEY")
 
     base_url = env("RESUME_SCREENER_LLM_BASE_URL", "https://api.deepseek.com").rstrip("/")
     model = env("RESUME_SCREENER_MODEL", "deepseek-v4-flash")
+    evaluation_skill = normalize_skill(skill)
     payload = {
         "model": model,
         "temperature": 0.1,
@@ -167,6 +233,7 @@ def call_deepseek(job: dict[str, Any], resume: dict[str, Any]) -> dict[str, Any]
                     "年龄、性别、婚育、民族、宗教、健康状况等敏感信息不得影响 conclusion 和 score，只能作为人工复核风险提示。"
                     "评分规则：硬性要求占 60%，JD 职责匹配占 20%，加分项占 10%，风险扣分占 10%。"
                     "如果关键硬性要求缺失 2 项及以上，不能给“非常匹配”。如果核心硬性要求完全不明确，优先给“不匹配”。"
+                    "必须遵循本次传入的 screening_skill 来调整检查重点、扣分严格度和追问方向。"
                     "输出合法 JSON，conclusion 只能是：非常匹配、一般匹配、不匹配。"
                 ),
             },
@@ -184,6 +251,7 @@ def call_deepseek(job: dict[str, Any], resume: dict[str, Any]) -> dict[str, Any]
                             "interview_questions": ["围绕缺失项、风险项和关键业绩设计 3-6 个追问"],
                             "summary": "用 2-4 句话说明整体判断逻辑，不要空泛",
                         },
+                        "screening_skill": evaluation_skill,
                         "job": job,
                         "resume": resume,
                     },
@@ -217,6 +285,7 @@ def call_deepseek(job: dict[str, Any], resume: dict[str, Any]) -> dict[str, Any]
         "summary": str(data.get("summary") or ""),
         "model_name": model,
         "prompt_version": PROMPT_VERSION,
+        "skill_id": evaluation_skill["id"],
     }
 
 

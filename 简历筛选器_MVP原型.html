@@ -272,6 +272,21 @@
     .analysis-label.warn { color: #92400e; background: #fef3c7; }
     .analysis-label.fail { color: #b42318; background: #fee4e2; }
     .analysis-label.ask { color: #1d4ed8; background: #dbeafe; }
+    .live-analysis { display: grid; gap: 12px; }
+    .live-card { border: 1px solid var(--line); border-radius: 8px; background: #fff; overflow: hidden; }
+    .live-card-head { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 15px 16px; border-bottom: 1px solid var(--line); background: #fbfdff; }
+    .live-card-head h3 { margin: 0; color: var(--ink); font-size: 17px; }
+    .live-card-head p { margin: 5px 0 0; color: var(--muted); font-size: 13px; }
+    .live-steps { display: grid; padding: 4px 0; }
+    .live-step { display: grid; grid-template-columns: 30px 1fr; gap: 10px; padding: 12px 16px; border-bottom: 1px solid var(--line); }
+    .live-step:last-child { border-bottom: 0; }
+    .live-dot { width: 22px; height: 22px; border-radius: 999px; color: #fff; background: #64748b; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; }
+    .live-step.running .live-dot { background: var(--brand); animation: pulse 1s infinite alternate; }
+    .live-step.done .live-dot { background: var(--green); }
+    .live-step.error .live-dot { background: var(--red); }
+    .live-step strong { display: block; color: var(--ink); font-size: 14px; }
+    .live-step span { display: block; margin-top: 3px; color: var(--muted); font-size: 13px; line-height: 1.45; }
+    @keyframes pulse { from { opacity: .65; transform: scale(.96); } to { opacity: 1; transform: scale(1.04); } }
 
     .searchbar { display: grid; grid-template-columns: minmax(220px, 1fr) 170px 190px; gap: 10px; width: min(780px, 100%); }
     .empty {
@@ -488,15 +503,30 @@
             <div class="panel-body">
               <div class="screen-step active" data-step="1">
                 <div class="field"><label for="screenJob">选择岗位</label><select id="screenJob"></select></div>
+                <div class="field">
+                  <label for="screeningSkill">评测 Skill <span class="label-note">决定模型检查重点</span></label>
+                  <select id="screeningSkill">
+                    <option value="balanced">通用均衡筛选</option>
+                    <option value="strict">硬性要求优先</option>
+                    <option value="potential">潜力型候选人识别</option>
+                    <option value="sales">销售岗位筛选</option>
+                    <option value="product">产品经理筛选</option>
+                    <option value="custom">自定义 Skill</option>
+                  </select>
+                </div>
+                <div class="field" id="customSkillWrap" style="display:none">
+                  <label for="customSkillPrompt">自定义 Skill 要求</label>
+                  <textarea id="customSkillPrompt" style="min-height:120px" placeholder="例如：优先考察候选人是否有从 0 到 1 搭建经历；对行业经验放宽，但必须有复杂项目推进证据。"></textarea>
+                </div>
                 <div class="actions"><button class="btn" data-next-step="2" type="button">下一步：上传简历</button></div>
               </div>
               <div class="screen-step" data-step="2">
                 <div class="form-section">
                   <p class="section-label">批量上传</p>
                   <div class="upload">
-                    <strong id="fileName">选择本地文本简历文件</strong>
-                    <span>当前原型支持 .txt / .md / .csv。生产版可接 PDF / Word 解析服务。</span>
-                    <input id="resumeFiles" type="file" accept=".txt,.md,.csv,.html,.htm,text/html" multiple>
+                    <strong id="fileName">选择本地简历文件</strong>
+                    <span>支持 .txt / .md / .csv / .html / .pdf / 图片。图片解析需要配置支持视觉的模型。</span>
+                    <input id="resumeFiles" type="file" accept=".txt,.md,.csv,.html,.htm,.pdf,.png,.jpg,.jpeg,.webp,.bmp,text/html,application/pdf,image/*" multiple>
                   </div>
                 </div>
                 <div class="form-section">
@@ -755,7 +785,12 @@ created_at</pre></div>
       $("resultJob").innerHTML = `<option value="">全部岗位</option>` + state.jobs.map((job) => `<option value="${escapeHtml(job.name)}">${escapeHtml(job.name)}</option>`).join("");
     }
     function renderPendingResumes() {
-      $("batchList").innerHTML = pendingResumes.map((resume, index) => `<div class="resume-card"><div><strong>${escapeHtml(resume.candidateName)}</strong><span>${escapeHtml(resume.resumeName)} · ${resume.fileType === "pdf" ? "PDF 待解析" : resume.resumeText.length + " 字"}</span></div><button class="small-btn" data-remove-resume="${index}" type="button">移除</button></div>`).join("");
+      $("batchList").innerHTML = pendingResumes.map((resume, index) => `<div class="resume-card"><div><strong>${escapeHtml(resume.candidateName)}</strong><span>${escapeHtml(resume.resumeName)} · ${escapeHtml(resumeFileStatus(resume))}</span></div><button class="small-btn" data-remove-resume="${index}" type="button">移除</button></div>`).join("");
+    }
+    function resumeFileStatus(resume) {
+      if (resume.fileType === "pdf") return "PDF 待解析";
+      if (resume.fileType === "image") return "图片待解析";
+      return (resume.resumeText || "").length + " 字";
     }
     function setScreenStep(step) {
       activeStep = step;
@@ -772,8 +807,11 @@ created_at</pre></div>
       pendingResumes = [];
       for (const file of files) {
         const isPdf = file.name.toLowerCase().endsWith(".pdf") || file.type === "application/pdf";
+        const isImage = file.type.startsWith("image/") || /\.(png|jpe?g|webp|bmp)$/i.test(file.name);
         if (isPdf) {
-          pendingResumes.push({ candidateName: cleanName(file.name), resumeName: file.name, resumeText: "", fileBase64: await readFileBase64(file), fileType: "pdf" });
+          pendingResumes.push({ candidateName: cleanName(file.name), resumeName: file.name, resumeText: "", fileBase64: await readFileBase64(file), mimeType: file.type || "application/pdf", fileType: "pdf" });
+        } else if (isImage) {
+          pendingResumes.push({ candidateName: cleanName(file.name), resumeName: file.name, resumeText: "", fileBase64: await readFileBase64(file), mimeType: file.type || "image/png", fileType: "image" });
         } else {
           pendingResumes.push({ candidateName: cleanName(file.name), resumeName: file.name, resumeText: await file.text(), fileType: "text" });
         }
@@ -1007,21 +1045,34 @@ created_at</pre></div>
       const pasted = $("resumeText").value.trim();
       if (pasted) resumes.push({ candidateName: $("candidateName").value.trim() || "未命名候选人", resumeName: $("resumeLabel").value.trim() || "粘贴简历", resumeText: pasted });
       if (!resumes.length) { alert("请上传简历或粘贴单份简历。"); setScreenStep(2); return; }
-      $("confirmBox").innerHTML = `<div class="ai-status"><strong>AI 正在分析</strong><br>正在调用 DeepSeek 逐项比对岗位硬性要求、人才画像、加分项和简历证据，请稍等。</div>`;
+      const screeningSkill = collectScreeningSkill();
+      setPage("resultViewPage");
+      renderLiveAnalysis(job, resumes, screeningSkill);
       try {
+        await updateLiveStep("parse", "running", "正在解析文件", "正在识别 PDF、HTML、图片或文本简历，并清洗不可见字符。");
+        await delay(450);
+        await updateLiveStep("standard", "running", "正在加载岗位标准", "正在读取 JD、人才画像、硬性要求、加分项和评测 Skill。");
+        await delay(450);
+        await updateLiveStep("standard", "done", "岗位标准已加载", `已应用 Skill：${screeningSkill.name}`);
+        await updateLiveStep("model", "running", "正在调用模型", "模型正在按 Skill 要求逐条检查简历证据、缺口、风险和追问。");
         const data = await apiFetch("/api/screenings", {
           method: "POST",
           body: JSON.stringify({
             organization_id: ORG_ID,
             job_id: job.id,
+            screening_skill: screeningSkill,
             resumes: resumes.map((resume) => ({
               candidate_name: resume.candidateName,
               resume_name: resume.resumeName,
               resume_text: resume.resumeText || "",
-              file_base64: resume.fileBase64 || ""
+              file_base64: resume.fileBase64 || "",
+              mime_type: resume.mimeType || ""
             }))
           })
         });
+        await updateLiveStep("model", "done", "模型评测完成", "已生成匹配依据、缺失项、风险点和面试追问。");
+        await updateLiveStep("persist", "running", "正在写入结果库", "正在保存候选人简历、评测任务和评测结论。");
+        await delay(350);
         latestResults = (data.results || []).map((row, index) => {
           const sourceResume = resumes[index] || {};
           return resultToViewModel({
@@ -1030,17 +1081,35 @@ created_at</pre></div>
             resumes: { candidate_name: sourceResume.candidateName, file_name: sourceResume.resumeName }
           });
         });
-        pendingResumes = []; $("resumeFiles").value = ""; $("resumeText").value = ""; $("candidateName").value = ""; $("resumeLabel").value = ""; $("fileName").textContent = "选择本地文本简历文件";
+        pendingResumes = []; $("resumeFiles").value = ""; $("resumeText").value = ""; $("candidateName").value = ""; $("resumeLabel").value = ""; $("fileName").textContent = "选择本地简历文件";
         await loadRemoteData();
+        await updateLiveStep("persist", "done", "结果已写入", "评测记录已进入结果管理，可继续复核或导出。");
         renderSingleResults(latestResults);
-        setPage("resultViewPage");
         setScreenStep(1);
       } catch (error) {
         console.error(error);
-        alert("AI 评测失败：" + error.message);
+        await updateLiveStep("model", "error", "评测失败", error.message);
         updateConfirmBox();
       }
     }
+    function collectScreeningSkill() {
+      const id = $("screeningSkill")?.value || "balanced";
+      const names = { balanced: "通用均衡筛选", strict: "硬性要求优先", potential: "潜力型候选人识别", sales: "销售岗位筛选", product: "产品经理筛选", custom: "自定义 Skill" };
+      return { id, name: names[id] || id, custom: id === "custom" ? $("customSkillPrompt").value.trim() : "" };
+    }
+    function renderLiveAnalysis(job, resumes, screeningSkill) {
+      $("singleResultContent").className = "";
+      $("singleResultContent").innerHTML = `<div class="live-analysis"><section class="live-card"><div class="live-card-head"><div><h3>AI 正在评测</h3><p>${escapeHtml(job.name)} · ${resumes.length} 份简历 · ${escapeHtml(screeningSkill.name)}</p></div><span class="pill running">进行中</span></div><div class="live-steps" id="liveSteps"><div class="live-step running" data-live-step="parse"><span class="live-dot">1</span><div><strong>准备解析文件</strong><span>等待读取上传材料。</span></div></div><div class="live-step" data-live-step="standard"><span class="live-dot">2</span><div><strong>加载岗位标准</strong><span>等待加载 JD、硬性要求、加分项和 Skill。</span></div></div><div class="live-step" data-live-step="model"><span class="live-dot">3</span><div><strong>模型逐项分析</strong><span>等待调用模型。</span></div></div><div class="live-step" data-live-step="persist"><span class="live-dot">4</span><div><strong>写入结果</strong><span>等待保存结果。</span></div></div></div></section></div>`;
+    }
+    async function updateLiveStep(id, status, title, detail) {
+      const row = document.querySelector(`[data-live-step="${id}"]`);
+      if (!row) return;
+      row.className = `live-step ${status}`;
+      row.querySelector("strong").textContent = title;
+      row.querySelector("span:last-child").textContent = detail;
+      await delay(60);
+    }
+    function delay(ms) { return new Promise((resolve) => setTimeout(resolve, ms)); }
     function resultBlock(item) {
       const rows = [
         ...analysisRows("pass", "已满足", item.matched.length ? item.matched : ["未识别到明确满足项"]),
@@ -1074,6 +1143,7 @@ created_at</pre></div>
     $("loadDemo").addEventListener("click", () => { if (!state.jobs.length || confirm("载入示例会追加两个岗位，是否继续？")) { state.jobs.unshift(...demoJobs.map((job) => ({ ...job, id: makeId("job") }))); saveState(); } });
     $("resetData").addEventListener("click", () => { if (!confirm("确认清空所有岗位和评测结果？")) return; state.jobs = []; state.results = []; pendingResumes = []; latestResults = []; localStorage.removeItem(storeKey); fillJobForm(null); saveState(); });
     $("resumeFiles").addEventListener("change", (event) => collectUploadedFiles(event.target.files));
+    $("screeningSkill").addEventListener("change", () => { $("customSkillWrap").style.display = $("screeningSkill").value === "custom" ? "block" : "none"; });
     $("resumeText").addEventListener("input", updateConfirmBox);
     $("screenJob").addEventListener("change", updateConfirmBox);
     $("runScreen").addEventListener("click", runScreening);

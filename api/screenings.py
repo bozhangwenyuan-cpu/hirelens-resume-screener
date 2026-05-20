@@ -23,6 +23,7 @@ class handler(BaseHTTPRequestHandler):
             organization_id = payload.get("organization_id")
             job_id = payload.get("job_id")
             resumes = payload.get("resumes") or []
+            screening_skill = payload.get("screening_skill") or payload.get("skill") or {}
             if not organization_id:
                 raise ValueError("organization_id 不能为空")
             if not job_id:
@@ -51,6 +52,8 @@ class handler(BaseHTTPRequestHandler):
                     file_name,
                     item.get("parsed_text") or item.get("resume_text") or item.get("resumeText") or "",
                     item.get("file_base64") or item.get("fileBase64") or "",
+                    item.get("mime_type") or item.get("mimeType") or "",
+                    screening_skill,
                 )
                 resume_rows = supabase_request(
                     "POST",
@@ -66,7 +69,7 @@ class handler(BaseHTTPRequestHandler):
                     prefer="return=representation",
                 )
                 resume = resume_rows[0]
-                evaluation = call_deepseek(job, resume)
+                evaluation = call_deepseek(job, resume, screening_skill)
                 result_rows = supabase_request(
                     "POST",
                     "screening_results",
