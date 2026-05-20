@@ -149,11 +149,20 @@ def image_to_text(file_name: str, file_base64: str, mime_type: str, skill: dict[
     payload = {
         "model": model,
         "temperature": 0,
+        "max_tokens": int(env("RESUME_SCREENER_VISION_MAX_TOKENS", "1200")),
         "messages": [
             {
                 "role": "user",
                 "content": [
-                    {"type": "text", "text": "请从这张图片简历中提取可用于招聘评测的纯文本。只输出简历正文，不要评价。"},
+                    {
+                        "type": "text",
+                        "text": (
+                            "你是简历图片 OCR 助手。请只抽取招聘初筛需要的关键信息，不要逐字完整转写。"
+                            "输出纯文本，控制在 1500 字以内，按以下字段组织：候选人姓名、当前/最近岗位、工作年限、教育经历、"
+                            "核心经历、项目/业绩、技能工具、行业经验、证书语言、稳定性线索、其他可评测信息。"
+                            "如果图片中某项看不清，写“不清晰”。不要评价候选人，不要输出 Markdown 表格。"
+                        ),
+                    },
                     {"type": "image_url", "image_url": {"url": f"data:{mime_type or 'image/png'};base64,{file_base64}"}},
                 ],
             }
