@@ -6,6 +6,7 @@ import re
 import urllib.error
 import urllib.parse
 import urllib.request
+import socket
 from base64 import b64decode
 from html import unescape
 from io import BytesIO
@@ -161,11 +162,13 @@ def image_to_text(file_name: str, file_base64: str, mime_type: str, skill: dict[
         method="POST",
     )
     try:
-        with urllib.request.urlopen(req, timeout=int(env("RESUME_SCREENER_LLM_TIMEOUT", "60"))) as resp:
+        with urllib.request.urlopen(req, timeout=int(env("RESUME_SCREENER_VISION_TIMEOUT", env("RESUME_SCREENER_LLM_TIMEOUT", "60")))) as resp:
             raw = json.loads(resp.read().decode("utf-8"))
     except urllib.error.HTTPError as exc:
         detail = exc.read().decode("utf-8", errors="ignore")
         raise RuntimeError(f"图片解析模型调用失败 {exc.code}: {detail}") from exc
+    except (TimeoutError, socket.timeout, urllib.error.URLError) as exc:
+        raise RuntimeError("图片解析超时。请稍后重试，或上传更清晰但体积更小的图片/HTML/PDF 简历。") from exc
     text = clean_text_value(raw["choices"][0]["message"]["content"].strip())
     if len(text) < 50:
         raise RuntimeError(f"{file_name} 未提取到有效简历文本，请确认图片清晰，或改用文本/PDF/HTML 简历。")

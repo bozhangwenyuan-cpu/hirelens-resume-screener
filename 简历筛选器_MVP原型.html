@@ -790,7 +790,7 @@ created_at</pre></div>
     }
     function resumeFileStatus(resume) {
       if (resume.fileType === "pdf") return "PDF 待解析";
-      if (resume.fileType === "image") return "图片待解析";
+      if (resume.fileType === "image") return resume.compressedSize ? `图片已压缩，待解析 ${(resume.compressedSize / 1024).toFixed(0)} KB` : "图片待解析";
       return (resume.resumeText || "").length + " 字";
     }
     function setScreenStep(step) {
@@ -812,7 +812,8 @@ created_at</pre></div>
         if (isPdf) {
           pendingResumes.push({ candidateName: cleanName(file.name), resumeName: file.name, resumeText: "", fileBase64: await readFileBase64(file), mimeType: file.type || "application/pdf", fileType: "pdf" });
         } else if (isImage) {
-          pendingResumes.push({ candidateName: cleanName(file.name), resumeName: file.name, resumeText: "", fileBase64: await readFileBase64(file), mimeType: file.type || "image/png", fileType: "image" });
+          const image = await compressImageForUpload(file);
+          pendingResumes.push({ candidateName: cleanName(file.name), resumeName: file.name, resumeText: "", fileBase64: image.base64, mimeType: image.mimeType, fileType: "image", originalSize: file.size, compressedSize: image.size });
         } else {
           pendingResumes.push({ candidateName: cleanName(file.name), resumeName: file.name, resumeText: await file.text(), fileType: "text" });
         }
@@ -826,6 +827,31 @@ created_at</pre></div>
         reader.onload = () => resolve(String(reader.result || "").split(",")[1] || "");
         reader.onerror = () => reject(new Error("文件读取失败"));
         reader.readAsDataURL(file);
+      });
+    }
+    function compressImageForUpload(file) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        const url = URL.createObjectURL(file);
+        img.onload = () => {
+          const maxSide = 1600;
+          const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
+          const canvas = document.createElement("canvas");
+          canvas.width = Math.max(1, Math.round(img.width * scale));
+          canvas.height = Math.max(1, Math.round(img.height * scale));
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          URL.revokeObjectURL(url);
+          const mimeType = "image/jpeg";
+          const dataUrl = canvas.toDataURL(mimeType, 0.82);
+          const base64 = dataUrl.split(",")[1] || "";
+          resolve({ base64, mimeType, size: Math.round(base64.length * 0.75) });
+        };
+        img.onerror = () => {
+          URL.revokeObjectURL(url);
+          reject(new Error("图片读取失败"));
+        };
+        img.src = url;
       });
     }
     function runScreening() {
