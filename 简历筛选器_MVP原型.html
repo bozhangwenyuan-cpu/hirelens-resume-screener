@@ -489,6 +489,12 @@
     .persona-field { display: grid; grid-template-rows: auto auto auto; gap: 7px; }
     .persona-field label { margin-bottom: 0; }
     .policy-select { height: 34px; color: #666; background: #f7f8fa; font-size: 12px; }
+    .grid-form .form-section .row { grid-template-columns: repeat(2, minmax(240px, 520px)); justify-content: start; align-items: start; }
+    .grid-form .form-section .row-3 { grid-template-columns: repeat(3, minmax(200px, 380px)); justify-content: start; align-items: start; }
+    .grid-form .persona-field { max-width: 520px; }
+    .grid-form .row-3 .persona-field { max-width: 380px; }
+    .grid-form .form-section > .persona-field { max-width: 760px; }
+    .grid-form input, .grid-form select, .grid-form textarea { width: 100%; }
     .job-preview-aside { display: none; }
     .table-wrap { overflow-x: auto; }
     table { width: max-content; min-width: 100%; table-layout: auto; }
