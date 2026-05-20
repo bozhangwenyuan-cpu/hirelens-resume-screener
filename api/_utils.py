@@ -240,6 +240,27 @@ def get_job_bundle(job_id: str) -> dict[str, Any]:
     job["requirements"] = reqs or []
     job["must_requirements"] = [row for row in job["requirements"] if row.get("type") == "must"]
     job["bonus_requirements"] = [row for row in job["requirements"] if row.get("type") == "bonus"]
+    persona = job.get("persona") or {}
+    keyword_payload = persona.get("persona_keywords")
+    if isinstance(keyword_payload, dict):
+        persona["persona_keywords"] = keyword_payload.get("keywords") or []
+        persona_policy = keyword_payload.get("policy") or {}
+    else:
+        persona_policy = {}
+    labels = {
+        "ageRange": ("年龄", persona.get("age_range")),
+        "gender": ("性别", persona.get("gender_preference")),
+        "workYears": ("工作时间", persona.get("work_years")),
+        "education": ("最低学历", persona.get("min_education")),
+        "jobHopFreq": ("跳槽频率", persona.get("job_hop_frequency")),
+        "personaKeywords": ("画像关键词", "、".join(persona.get("persona_keywords") or []) if isinstance(persona.get("persona_keywords"), list) else persona.get("persona_keywords")),
+    }
+    persona_rules = []
+    for key, policy in persona_policy.items():
+        label, value = labels.get(key, (key, ""))
+        if value and value != "不限":
+            persona_rules.append({"type": policy, "field_label": label, "field_value": value, "source": "persona"})
+    job["persona_decision_rules"] = persona_rules
     return job
 
 
@@ -273,8 +294,10 @@ def call_deepseek(job: dict[str, Any], resume: dict[str, Any], skill: Any = None
                 "content": (
                     "你是企业招聘简历初筛专家，目标是帮助 HR 做稳定、可复核的一面前初筛。"
                     "必须逐条检查岗位硬性要求、人才画像、加分项，并引用简历中的具体证据或说明缺失原因。"
+                    "人才画像字段如果被配置为硬性要求，除年龄、性别等敏感字段外，必须视为一票否决项，缺任意一项原则上不能通过；如果被配置为加分项，只能在其他条件相近时提高排序和分数。"
+                    "job.persona_decision_rules 中 type=must 表示必须项，type=bonus 表示优先加分项，type=reference 只作为人工参考。"
                     "只基于输入信息判断，不要虚构；没有证据时必须写“不明确”或“未体现”。"
-                    "年龄、性别、婚育、民族、宗教、健康状况等敏感信息不得影响 conclusion 和 score，只能作为人工复核风险提示。"
+                    "年龄、性别、婚育、民族、宗教、健康状况等敏感信息即使被配置为 must 或 bonus，也不得影响 conclusion 和 score，只能作为人工复核风险提示。"
                     "不得基于候选人照片、面相、颜值、年龄外观、气质或任何外貌信息推断能力、性格、稳定性或岗位适配度。"
                     "评分规则：硬性要求占 60%，JD 职责匹配占 20%，加分项占 10%，风险扣分占 10%。"
                     "如果关键硬性要求缺失 2 项及以上，不能给“非常匹配”。如果核心硬性要求完全不明确，优先给“不匹配”。"
