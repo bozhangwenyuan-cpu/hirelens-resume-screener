@@ -949,8 +949,13 @@ created_at</pre></div>
         ...options,
         headers: { "Content-Type": "application/json", ...(options.headers || {}) }
       });
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(data.error || "接口请求失败");
+      const raw = await response.text();
+      let data = {};
+      try { data = raw ? JSON.parse(raw) : {}; } catch (error) { data = { error: raw }; }
+      if (!response.ok) {
+        const detail = data.error || data.message || raw || `HTTP ${response.status}`;
+        throw new Error(`接口请求失败（${response.status}）：${detail}`);
+      }
       return data;
     }
     function firstRow(value) { return Array.isArray(value) ? value[0] || {} : value || {}; }
