@@ -6,6 +6,7 @@ It supports:
 
 - Job management
 - Structured talent persona and screening criteria
+- Skill management for reusable screening methods
 - Resume upload, including BOSS Zhipin HTML resumes
 - DeepSeek-powered resume screening
 - Screening result management

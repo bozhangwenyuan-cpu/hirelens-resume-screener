@@ -310,6 +310,23 @@
     .schema-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
     .schema-card { padding: 14px; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
     .schema-card h4 { margin: 0 0 10px; color: var(--ink); font-size: 15px; }
+    .skill-layout { display: grid; grid-template-columns: minmax(0, 1fr) 420px; gap: 16px; align-items: start; }
+    .skill-list { display: grid; gap: 10px; }
+    .skill-card {
+      display: grid; grid-template-columns: 1fr auto; gap: 14px; align-items: start;
+      padding: 14px; border: 1px solid var(--line); border-radius: 8px; background: #fff;
+    }
+    .skill-card:hover { border-color: #d8d0c5; background: #fffdfa; }
+    .skill-title { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+    .skill-title strong { color: var(--ink); font-size: 15px; }
+    .skill-meta { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 0; }
+    .skill-desc { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.55; }
+    .skill-instruction {
+      margin-top: 10px; padding: 10px; border: 1px solid var(--line); border-radius: 8px;
+      background: #fbfaf7; color: #344054; font-size: 12px; line-height: 1.6; white-space: pre-wrap;
+    }
+    .pill.neutral { color: #475467; background: var(--gray-soft); }
+    .pill.soft { color: var(--brand); background: var(--brand-soft); }
     code, pre { font-family: Consolas, "SFMono-Regular", Menlo, monospace; }
     pre { margin: 0; padding: 12px; overflow: auto; border-radius: 8px; background: #0f172a; color: #e5e7eb; font-size: 12px; line-height: 1.55; }
 
@@ -329,6 +346,9 @@
       .metric-strip, .progress, .detail-grid, .analysis-row, .row, .row-3, .searchbar, .schema-grid, .nav { grid-template-columns: 1fr; }
       .step { border-right: 0; border-bottom: 1px solid var(--line); }
       .step:last-child { border-bottom: 0; }
+    }
+    @media (max-width: 1180px) {
+      .skill-layout { grid-template-columns: 1fr; }
     }
     #loadDemo,
     #resetData,
@@ -360,6 +380,7 @@
       <nav class="nav">
         <button class="nav-btn active" data-page="jobsPage" type="button"><span class="icon">岗</span><span><strong>招聘岗位</strong><span>岗位池与招聘状态</span></span></button>
         <button class="nav-btn" data-page="screenPage" type="button"><span class="icon">评</span><span><strong>简历评测</strong><span>按步骤创建评测任务</span></span></button>
+        <button class="nav-btn" data-page="skillsPage" type="button"><span class="icon">技</span><span><strong>Skill 管理</strong><span>评测策略与 Prompt</span></span></button>
         <button class="nav-btn" data-page="resultsPage" type="button"><span class="icon">库</span><span><strong>结果管理</strong><span>候选人评测记录</span></span></button>
         <button class="nav-btn" data-page="databasePage" type="button"><span class="icon">数</span><span><strong>数据方案</strong><span>数据库表与存储设计</span></span></button>
       </nav>
@@ -563,6 +584,55 @@
           </section>
         </section>
 
+        <section id="skillsPage" class="page">
+          <div class="page-head">
+            <div class="page-title">
+              <h2>Skill 管理</h2>
+              <p>把不同岗位、不同筛选风格沉淀成可复用的评测策略。评测时选择 Skill，模型会按这里的规则调整检查重点、扣分尺度和追问方向。</p>
+            </div>
+            <button class="btn" id="createSkillBtn" type="button">新建 Skill</button>
+          </div>
+
+          <div class="metric-strip">
+            <div class="metric"><span>Skill 总数</span><strong id="metricSkills">0</strong></div>
+            <div class="metric"><span>启用中</span><strong id="metricActiveSkills">0</strong></div>
+            <div class="metric"><span>系统内置</span><strong id="metricSystemSkills">0</strong></div>
+            <div class="metric"><span>自定义</span><strong id="metricCustomSkills">0</strong></div>
+          </div>
+
+          <div class="skill-layout">
+            <section class="panel">
+              <div class="panel-head">
+                <div><h3>评测策略库</h3><p>清晰描述每个 Skill 的适用场景，避免 HR 在评测时临时写 Prompt。</p></div>
+              </div>
+              <div class="panel-body">
+                <div id="skillEmpty" class="empty">暂无 Skill。可以先使用系统内置策略，也可以新建团队自己的筛选方法。</div>
+                <div id="skillList" class="skill-list"></div>
+              </div>
+            </section>
+
+            <aside class="panel">
+              <div class="panel-head"><div><h3 id="skillFormTitle">新建 Skill</h3><p>用于控制模型评测方法。</p></div></div>
+              <div class="panel-body">
+                <input id="skillId" type="hidden">
+                <div class="field"><label for="skillName">Skill 名称</label><input id="skillName" placeholder="如：高潜产品经理筛选"></div>
+                <div class="row">
+                  <div class="field"><label for="skillCategory">分类</label><input id="skillCategory" placeholder="如：产品 / 销售 / 管理"></div>
+                  <div class="field"><label for="skillStatus">状态</label><select id="skillStatus"><option value="active">启用</option><option value="paused">停用</option></select></div>
+                </div>
+                <div class="field"><label for="skillStrictness">严格度</label><select id="skillStrictness"><option value="balanced">均衡</option><option value="strict">严格</option><option value="potential">潜力优先</option></select></div>
+                <div class="field"><label for="skillDescription">使用说明</label><textarea id="skillDescription" placeholder="说明这个 Skill 适合什么岗位、什么筛选阶段。"></textarea></div>
+                <div class="field"><label for="skillInstruction">评测方法 <span class="label-note">会传给模型</span></label><textarea id="skillInstruction" style="min-height:220px" placeholder="写清楚模型应该重点检查什么、如何扣分、哪些情况需要人工复核。"></textarea></div>
+                <div class="hint-box">建议用“检查项 + 扣分规则 + 追问方向”的结构写 Skill。不要要求模型基于照片、面相、颜值等外貌信息做招聘判断。</div>
+                <div class="actions" style="margin-top:14px">
+                  <button class="btn" id="saveSkill" type="button">保存 Skill</button>
+                  <button class="btn secondary" id="resetSkillForm" type="button">清空</button>
+                </div>
+              </div>
+            </aside>
+          </div>
+        </section>
+
         <section id="resultViewPage" class="page">
           <div class="page-head">
             <div class="page-title"><h2>评测结果</h2><p>本页展示单次评测结论。可以返回结果管理页查看全部候选人记录。</p></div>
@@ -609,6 +679,7 @@ users
 jobs
 job_personas
 job_requirements
+screening_skills
 resumes
 screening_tasks
 screening_results
@@ -641,6 +712,16 @@ field_value
 weight
 is_knockout
 sort_order</pre></div>
+            <div class="schema-card"><h4>screening_skills</h4><pre>id PK
+company_id FK
+name
+category
+description
+instruction
+strictness
+status
+is_system
+updated_at</pre></div>
             <div class="schema-card"><h4>resumes</h4><pre>id PK
 company_id FK
 candidate_name
@@ -687,12 +768,19 @@ created_at</pre></div>
   <script>
     const $ = (id) => document.getElementById(id);
     const storeKey = "resume_screener_workspace_v4";
-    const pageNames = { jobsPage: "招聘岗位", jobEditPage: "岗位编辑", screenPage: "简历评测", resultViewPage: "评测结果", resultsPage: "结果管理", databasePage: "数据方案" };
+    const pageNames = { jobsPage: "招聘岗位", jobEditPage: "岗位编辑", screenPage: "简历评测", skillsPage: "Skill 管理", resultViewPage: "评测结果", resultsPage: "结果管理", databasePage: "数据方案" };
     const screenTitles = { 1: ["选择评测岗位", "选择一个已配置标准的岗位。"], 2: ["上传简历", "可批量上传，也可粘贴单个候选人简历。"], 3: ["确认评测", "确认本次评测任务并生成结论。"] };
     const state = loadState();
     let pendingResumes = [];
     let activeStep = 1;
     let latestResults = [];
+    const defaultSkills = [
+      { id: "balanced", name: "通用均衡筛选", category: "通用", description: "适合大多数岗位初筛，综合硬性要求、职责匹配、加分项和风险点。", instruction: "采用均衡筛选方法：硬性要求、职责匹配、稳定性风险和加分项都要纳入，适合大多数岗位初筛。", strictness: "balanced", status: "active", is_system: true },
+      { id: "strict", name: "硬性要求优先", category: "强筛选", description: "适合候选人量大、硬性门槛明确的岗位。", instruction: "采用强硬性要求筛选方法：只要关键硬性要求缺失或无法证明，就明显降低分数；不确定时倾向人工复核或不匹配。", strictness: "strict", status: "active", is_system: true },
+      { id: "potential", name: "潜力型候选人识别", category: "潜力", description: "适合校招、转型候选人或成长型岗位。", instruction: "采用潜力识别方法：允许候选人部分经历不完全对口，但要重点寻找迁移能力、学习能力、复杂项目经验和成长曲线。", strictness: "potential", status: "active", is_system: true },
+      { id: "sales", name: "销售岗位筛选", category: "销售", description: "强调客户开发、业绩数字、回款和资源质量。", instruction: "采用销售岗位筛选方法：重点检查客户开发、业绩数字、客单价、销售周期、回款、行业资源、抗压和稳定性。", strictness: "balanced", status: "active", is_system: true },
+      { id: "product", name: "产品经理筛选", category: "产品", description: "强调需求分析、PRD、原型、项目推进和业务抽象。", instruction: "采用产品岗位筛选方法：重点检查需求分析、PRD/原型、项目推进、数据或 AI 理解、跨部门协作和业务抽象能力。", strictness: "balanced", status: "active", is_system: true }
+    ];
 
     const demoJobs = [
       {
@@ -712,8 +800,11 @@ created_at</pre></div>
     ];
 
     function loadState() {
-      try { const saved = JSON.parse(localStorage.getItem(storeKey)); if (saved && Array.isArray(saved.jobs) && Array.isArray(saved.results)) return saved; } catch (error) {}
-      return { jobs: [], results: [] };
+      try {
+        const saved = JSON.parse(localStorage.getItem(storeKey));
+        if (saved && Array.isArray(saved.jobs) && Array.isArray(saved.results)) return { jobs: saved.jobs, results: saved.results, skills: saved.skills || [] };
+      } catch (error) {}
+      return { jobs: [], results: [], skills: [] };
     }
     function saveState() { localStorage.setItem(storeKey, JSON.stringify(state)); renderAll(); }
     function makeId(prefix) { return prefix + "_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 7); }
@@ -847,6 +938,75 @@ created_at</pre></div>
       const options = (running.length ? running : state.jobs).map((job) => `<option value="${job.id}">${escapeHtml(job.name)} (${escapeHtml(job.status)})</option>`).join("");
       $("screenJob").innerHTML = options || `<option value="">请先新增岗位</option>`;
       $("resultJob").innerHTML = `<option value="">全部岗位</option>` + state.jobs.map((job) => `<option value="${escapeHtml(job.name)}">${escapeHtml(job.name)}</option>`).join("");
+    }
+    function allSkills() {
+      const custom = Array.isArray(state.skills) ? state.skills : [];
+      const customIds = new Set(custom.map((skill) => skill.id));
+      return [...custom, ...defaultSkills.filter((skill) => !customIds.has(skill.id))];
+    }
+    function strictnessText(value) {
+      return ({ strict: "严格", potential: "潜力优先", balanced: "均衡" })[value] || "均衡";
+    }
+    function renderSkills() {
+      const skills = allSkills();
+      const active = skills.filter((skill) => skill.status !== "paused");
+      $("metricSkills").textContent = skills.length;
+      $("metricActiveSkills").textContent = active.length;
+      $("metricSystemSkills").textContent = skills.filter((skill) => skill.is_system).length;
+      $("metricCustomSkills").textContent = skills.filter((skill) => !skill.is_system).length;
+      $("skillEmpty").style.display = skills.length ? "none" : "block";
+      $("skillList").innerHTML = skills.map((skill) => `
+        <article class="skill-card">
+          <div>
+            <div class="skill-title">
+              <strong>${escapeHtml(skill.name)}</strong>
+              <span class="pill ${skill.status === "paused" ? "neutral" : "running"}">${skill.status === "paused" ? "停用" : "启用"}</span>
+            </div>
+            <p class="skill-desc">${escapeHtml(skill.description || "暂无说明")}</p>
+            <div class="skill-meta">
+              <span class="pill soft">${escapeHtml(skill.category || "通用")}</span>
+              <span class="pill neutral">${escapeHtml(strictnessText(skill.strictness))}</span>
+              ${skill.is_system ? `<span class="pill neutral">系统内置</span>` : `<span class="pill soft">团队自定义</span>`}
+            </div>
+            <div class="skill-instruction">${escapeHtml(skill.instruction || "未配置评测方法")}</div>
+          </div>
+          <div class="actions">
+            <button class="small-btn" data-edit-skill="${skill.id}" type="button">编辑</button>
+            ${skill.is_system ? "" : `<button class="small-btn" data-delete-skill="${skill.id}" type="button">删除</button>`}
+          </div>
+        </article>
+      `).join("");
+      renderSkillOptions();
+    }
+    function renderSkillOptions() {
+      const skills = allSkills().filter((skill) => skill.status !== "paused");
+      const current = $("screeningSkill").value;
+      $("screeningSkill").innerHTML = skills.map((skill) => `<option value="${escapeHtml(skill.id)}">${escapeHtml(skill.name)}</option>`).join("") + `<option value="custom">自定义 Skill</option>`;
+      if ([...$("screeningSkill").options].some((option) => option.value === current)) $("screeningSkill").value = current;
+      $("customSkillWrap").style.display = $("screeningSkill").value === "custom" ? "block" : "none";
+    }
+    function fillSkillForm(skill) {
+      $("skillId").value = skill?.is_system ? "" : skill?.id || "";
+      $("skillName").value = skill?.name || "";
+      $("skillCategory").value = skill?.category || "";
+      $("skillStatus").value = skill?.status || "active";
+      $("skillStrictness").value = skill?.strictness || "balanced";
+      $("skillDescription").value = skill?.description || "";
+      $("skillInstruction").value = skill?.instruction || "";
+      $("skillFormTitle").textContent = skill ? (skill.is_system ? "复制系统 Skill" : "编辑 Skill") : "新建 Skill";
+    }
+    function collectSkillForm() {
+      return {
+        id: $("skillId").value,
+        organization_id: ORG_ID,
+        name: $("skillName").value.trim(),
+        category: $("skillCategory").value.trim() || "通用",
+        status: $("skillStatus").value,
+        strictness: $("skillStrictness").value,
+        description: $("skillDescription").value.trim(),
+        instruction: $("skillInstruction").value.trim(),
+        is_system: false
+      };
     }
     function renderPendingResumes() {
       $("batchList").innerHTML = pendingResumes.map((resume, index) => `<div class="resume-card"><div><strong>${escapeHtml(resume.candidateName)}</strong><span>${escapeHtml(resume.resumeName)} · ${escapeHtml(resumeFileStatus(resume))}</span></div><button class="small-btn" data-remove-resume="${index}" type="button">移除</button></div>`).join("");
@@ -1002,7 +1162,7 @@ created_at</pre></div>
         });
       });
     }
-    function renderAll() { renderJobs(); renderJobOptions(); renderPendingResumes(); renderResults(); updateConfirmBox(); renderRequirementPreview(); makeTablesResizable(); }
+    function renderAll() { renderJobs(); renderJobOptions(); renderSkills(); renderPendingResumes(); renderResults(); updateConfirmBox(); renderRequirementPreview(); makeTablesResizable(); }
 
     const ORG_ID = "1223fd31-7c98-4f07-a497-e9327aac7cbb";
     const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -1118,12 +1278,14 @@ created_at</pre></div>
     }
     async function loadRemoteData() {
       try {
-        const [jobsData, resultsData] = await Promise.all([
+        const [jobsResult, resultsResult, skillsResult] = await Promise.allSettled([
           apiFetch(`/api/jobs?organization_id=${encodeURIComponent(ORG_ID)}`),
-          apiFetch(`/api/results?organization_id=${encodeURIComponent(ORG_ID)}`)
+          apiFetch(`/api/results?organization_id=${encodeURIComponent(ORG_ID)}`),
+          apiFetch(`/api/skills?organization_id=${encodeURIComponent(ORG_ID)}`)
         ]);
-        state.jobs = (jobsData.items || []).map(jobToFormModel);
-        state.results = (resultsData.items || []).map(resultToViewModel);
+        if (jobsResult.status === "fulfilled") state.jobs = (jobsResult.value.items || []).map(jobToFormModel); else throw jobsResult.reason;
+        if (resultsResult.status === "fulfilled") state.results = (resultsResult.value.items || []).map(resultToViewModel); else throw resultsResult.reason;
+        if (skillsResult.status === "fulfilled") state.skills = skillsResult.value.items || [];
         renderAll();
       } catch (error) {
         console.error(error);
@@ -1149,6 +1311,33 @@ created_at</pre></div>
       if (!confirm(used ? "该岗位已有评测结果。删除岗位后，历史结果也会受影响。确认删除？" : "确认删除该岗位？")) return;
       await apiFetch(`/api/jobs?id=${encodeURIComponent(id)}&organization_id=${encodeURIComponent(ORG_ID)}`, { method: "DELETE" });
       await loadRemoteData();
+    }
+    async function saveSkill() {
+      const skill = collectSkillForm();
+      if (!skill.name || !skill.instruction) { alert("请填写 Skill 名称和评测方法。"); return; }
+      try {
+        const method = skill.id ? "PATCH" : "POST";
+        await apiFetch("/api/skills", { method, body: JSON.stringify(skill) });
+        fillSkillForm(null);
+        await loadRemoteData();
+      } catch (error) {
+        const localSkill = { ...skill, id: skill.id || makeId("skill"), updated_at: new Date().toISOString() };
+        const index = state.skills.findIndex((item) => item.id === localSkill.id);
+        if (index >= 0) state.skills[index] = localSkill; else state.skills.unshift(localSkill);
+        saveState();
+        alert("Skill 已先保存在当前浏览器。若要团队共享，请先在 Supabase 执行最新 supabase/schema.sql 后重新保存。");
+      }
+    }
+    async function deleteSkill(id) {
+      const skill = state.skills.find((item) => item.id === id);
+      if (!skill || !confirm("确认删除这个 Skill？")) return;
+      try {
+        await apiFetch(`/api/skills?id=${encodeURIComponent(id)}&organization_id=${encodeURIComponent(ORG_ID)}`, { method: "DELETE" });
+        await loadRemoteData();
+      } catch (error) {
+        state.skills = state.skills.filter((item) => item.id !== id);
+        saveState();
+      }
     }
     async function runScreening() {
       const job = state.jobs.find((item) => item.id === $("screenJob").value);
@@ -1207,8 +1396,9 @@ created_at</pre></div>
     }
     function collectScreeningSkill() {
       const id = $("screeningSkill")?.value || "balanced";
-      const names = { balanced: "通用均衡筛选", strict: "硬性要求优先", potential: "潜力型候选人识别", sales: "销售岗位筛选", product: "产品经理筛选", custom: "自定义 Skill" };
-      return { id, name: names[id] || id, custom: id === "custom" ? $("customSkillPrompt").value.trim() : "" };
+      if (id === "custom") return { id, name: "自定义 Skill", custom: $("customSkillPrompt").value.trim() };
+      const skill = allSkills().find((item) => item.id === id) || defaultSkills[0];
+      return { id: skill.id, name: skill.name, custom: skill.instruction, strictness: skill.strictness, category: skill.category };
     }
     function renderLiveAnalysis(job, resumes, screeningSkill) {
       $("singleResultContent").className = "";
@@ -1289,6 +1479,9 @@ created_at</pre></div>
       $(id).addEventListener("change", renderRequirementPreview);
     });
     $("saveJob").addEventListener("click", saveJob);
+    $("createSkillBtn").addEventListener("click", () => { fillSkillForm(null); setPage("skillsPage"); });
+    $("saveSkill").addEventListener("click", saveSkill);
+    $("resetSkillForm").addEventListener("click", () => fillSkillForm(null));
     $("loadDemo").addEventListener("click", () => { if (!state.jobs.length || confirm("载入示例会追加两个岗位，是否继续？")) { state.jobs.unshift(...demoJobs.map((job) => ({ ...job, id: makeId("job") }))); saveState(); } });
     $("resetData").addEventListener("click", () => { if (!confirm("确认清空所有岗位和评测结果？")) return; state.jobs = []; state.results = []; pendingResumes = []; latestResults = []; localStorage.removeItem(storeKey); fillJobForm(null); saveState(); });
     $("resumeFiles").addEventListener("change", (event) => collectUploadedFiles(event.target.files));
@@ -1299,10 +1492,12 @@ created_at</pre></div>
     $("clearResume").addEventListener("click", () => { pendingResumes = []; $("resumeFiles").value = ""; $("resumeText").value = ""; $("candidateName").value = ""; $("resumeLabel").value = ""; $("fileName").textContent = "选择本地文本简历文件"; renderPendingResumes(); updateConfirmBox(); });
     $("resultKeyword").addEventListener("input", renderResults); $("resultConclusion").addEventListener("change", renderResults); $("resultJob").addEventListener("change", renderResults); $("exportResults").addEventListener("click", exportResults);
     document.addEventListener("click", async (event) => {
-      const previewJobId = event.target.dataset.previewJob, editJobId = event.target.dataset.editJob, deleteJobId = event.target.dataset.deleteJob, removeResumeIndex = event.target.dataset.removeResume, viewResultId = event.target.dataset.viewResult, deleteResultId = event.target.dataset.deleteResult;
+      const previewJobId = event.target.dataset.previewJob, editJobId = event.target.dataset.editJob, deleteJobId = event.target.dataset.deleteJob, editSkillId = event.target.dataset.editSkill, deleteSkillId = event.target.dataset.deleteSkill, removeResumeIndex = event.target.dataset.removeResume, viewResultId = event.target.dataset.viewResult, deleteResultId = event.target.dataset.deleteResult;
       if (previewJobId) { const job = state.jobs.find((item) => item.id === previewJobId); if (job) openRequirementPreview(job); }
       if (editJobId) { const job = state.jobs.find((item) => item.id === editJobId); if (job) fillJobForm(job); setPage("jobEditPage"); window.scrollTo({ top: 0, behavior: "smooth" }); }
       if (deleteJobId) deleteJob(deleteJobId);
+      if (editSkillId) { const skill = allSkills().find((item) => item.id === editSkillId); if (skill) { fillSkillForm(skill); setPage("skillsPage"); window.scrollTo({ top: 0, behavior: "smooth" }); } }
+      if (deleteSkillId) deleteSkill(deleteSkillId);
       if (removeResumeIndex !== undefined) { pendingResumes.splice(Number(removeResumeIndex), 1); renderPendingResumes(); updateConfirmBox(); }
       if (viewResultId) { const item = state.results.find((result) => result.id === viewResultId); if (item) { latestResults = [item]; renderSingleResults(latestResults); setPage("resultViewPage"); } }
       if (deleteResultId) {

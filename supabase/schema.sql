@@ -53,6 +53,20 @@ create table if not exists public.job_requirements (
   sort_order integer not null default 0
 );
 
+create table if not exists public.screening_skills (
+  id uuid primary key default gen_random_uuid(),
+  organization_id uuid not null references public.organizations(id) on delete cascade,
+  name text not null,
+  category text not null default '通用',
+  description text,
+  instruction text not null,
+  strictness text not null default 'balanced',
+  status text not null default 'active' check (status in ('active', 'paused')),
+  is_system boolean not null default false,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
 create table if not exists public.resumes (
   id uuid primary key default gen_random_uuid(),
   organization_id uuid not null references public.organizations(id) on delete cascade,
@@ -99,12 +113,14 @@ create index if not exists idx_jobs_org on public.jobs(organization_id);
 create index if not exists idx_resumes_org on public.resumes(organization_id);
 create index if not exists idx_results_org on public.screening_results(organization_id);
 create index if not exists idx_results_job on public.screening_results(job_id);
+create index if not exists idx_screening_skills_org on public.screening_skills(organization_id);
 
 alter table public.organizations enable row level security;
 alter table public.organization_members enable row level security;
 alter table public.jobs enable row level security;
 alter table public.job_personas enable row level security;
 alter table public.job_requirements enable row level security;
+alter table public.screening_skills enable row level security;
 alter table public.resumes enable row level security;
 alter table public.screening_tasks enable row level security;
 alter table public.screening_results enable row level security;
@@ -156,6 +172,11 @@ using (exists (
     and public.is_org_member(j.organization_id)
 ));
 
+drop policy if exists "members can read screening_skills" on public.screening_skills;
+create policy "members can read screening_skills"
+on public.screening_skills for select
+using (public.is_org_member(organization_id));
+
 drop policy if exists "members can read resumes" on public.resumes;
 create policy "members can read resumes"
 on public.resumes for select
@@ -170,4 +191,3 @@ drop policy if exists "members can read screening_results" on public.screening_r
 create policy "members can read screening_results"
 on public.screening_results for select
 using (public.is_org_member(organization_id));
-
