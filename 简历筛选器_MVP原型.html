@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>HireLens 招聘评测工作台</title>
+  <title>Lumy-HR 招聘评测工作台</title>
   <style>
     :root {
       --bg: #f5f7fa;
@@ -14,9 +14,9 @@
       --muted: #667085;
       --line: #e4e7ec;
       --line2: #cfd6df;
-      --brand: #2454c6;
-      --brand-dark: #193f9b;
-      --brand-soft: #eef4ff;
+      --brand: #5b4b3b;
+      --brand-dark: #40352b;
+      --brand-soft: #f4eee7;
       --green: #16794f;
       --green-soft: #e9f7ef;
       --amber: #a15c07;
@@ -44,23 +44,21 @@
     .app.sidebar-collapsed { grid-template-columns: 76px minmax(0, 1fr); }
     .sidebar {
       position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column;
-      background:
-        radial-gradient(circle at 18% 0%, rgba(70, 132, 255, .38), transparent 32%),
-        radial-gradient(circle at 98% 32%, rgba(35, 211, 238, .18), transparent 34%),
-        linear-gradient(180deg, #071528 0%, #0b1024 58%, #090d1b 100%);
-      color: #e5e7eb; border-right: 1px solid rgba(98, 155, 255, .22);
-      box-shadow: inset -1px 0 0 rgba(255,255,255,.04);
+      color: #2f2b26;
+      background: #f7f4ee;
+      border-right: 1px solid #e5ded4;
+      box-shadow: none;
     }
-    .brand { padding: 22px 20px 18px; border-bottom: 1px solid rgba(129, 179, 255, .16); }
+    .brand { padding: 20px 18px 16px; border-bottom: 1px solid #e6dfd5; }
     .brand-mark {
       width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center;
       margin-bottom: 12px; border-radius: 8px;
-      background: linear-gradient(135deg, #eaf3ff, #9fe8ff);
-      color: #103c8f; font-weight: 900;
-      box-shadow: 0 0 22px rgba(78, 173, 255, .36);
+      background: #2f2b26;
+      color: #fff; font-weight: 900;
+      box-shadow: none;
     }
-    .brand h1 { margin: 0 0 6px; color: #fff; font-size: 20px; line-height: 1.2; }
-    .brand p { margin: 0; color: #aeb8c7; font-size: 13px; line-height: 1.6; }
+    .brand h1 { margin: 0 0 6px; color: #2f2b26; font-size: 20px; line-height: 1.2; }
+    .brand p { margin: 0; color: #776f65; font-size: 13px; line-height: 1.6; }
     .app.sidebar-collapsed .brand { padding: 18px 12px; }
     .app.sidebar-collapsed .brand h1,
     .app.sidebar-collapsed .brand p,
@@ -68,35 +66,36 @@
     .app.sidebar-collapsed .nav-btn span span,
     .app.sidebar-collapsed .sidebar-footer { display: none; }
     .app.sidebar-collapsed .brand-mark { margin: 0 auto; }
-    .nav { padding: 14px 12px; display: grid; gap: 6px; }
+    .nav { padding: 12px 10px; display: grid; gap: 4px; }
     .nav-btn {
       width: 100%; min-height: 54px; display: grid; grid-template-columns: 28px 1fr; gap: 10px; align-items: center;
-      padding: 9px 10px; border: 1px solid transparent; border-radius: 8px; color: #cbd5e1; background: transparent; text-align: left;
+      padding: 9px 10px; border: 1px solid transparent; border-radius: 8px; color: #4b463f; background: transparent; text-align: left;
     }
     .app.sidebar-collapsed .nav-btn { grid-template-columns: 1fr; justify-items: center; padding: 10px 8px; }
     .nav-btn .icon {
       width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center;
-      border-radius: 6px; background: rgba(112, 165, 255, .12); color: #cce8ff; font-size: 14px; font-weight: 900;
+      border-radius: 6px; background: transparent; color: #776f65; font-size: 14px; font-weight: 900;
     }
     .nav-btn strong { display: block; color: inherit; font-size: 14px; line-height: 1.25; }
-    .nav-btn span span { display: block; margin-top: 2px; color: #94a3b8; font-size: 12px; line-height: 1.3; }
+    .nav-btn span span { display: block; margin-top: 2px; color: #8a8176; font-size: 12px; line-height: 1.3; }
     .nav-btn.active {
-      color: #fff;
-      border-color: rgba(117, 183, 255, .28);
-      background: linear-gradient(90deg, rgba(42, 102, 255, .32), rgba(28, 205, 236, .12));
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,.04), 0 0 24px rgba(48, 113, 255, .16);
+      color: #26221d;
+      border-color: #e8dfd3;
+      background: #ebe4da;
+      box-shadow: none;
     }
+    .nav-btn:hover { background: #efe9e0; }
     .nav-btn.active .icon {
       color: #fff;
-      background: linear-gradient(135deg, #285dff, #16c4df);
-      box-shadow: 0 0 16px rgba(41, 151, 255, .35);
+      background: #2f2b26;
+      box-shadow: none;
     }
     .sidebar-tools {
       display: grid;
       gap: 8px;
       padding: 14px 12px;
-      border-top: 1px solid rgba(129, 179, 255, .12);
-      border-bottom: 1px solid rgba(129, 179, 255, .12);
+      border-top: 1px solid #e6dfd5;
+      border-bottom: 1px solid #e6dfd5;
     }
     .sidebar-tool-btn {
       width: 100%;
@@ -105,20 +104,20 @@
       align-items: center;
       justify-content: center;
       gap: 8px;
-      border: 1px solid rgba(117, 183, 255, .24);
+      border: 1px solid #d8d0c5;
       border-radius: 8px;
-      color: #dbeafe;
-      background: rgba(17, 35, 68, .72);
+      color: #4b463f;
+      background: #fbfaf7;
       font-size: 13px;
       font-weight: 900;
     }
     .sidebar-tool-btn:hover {
-      background: rgba(36, 84, 198, .34);
-      border-color: rgba(126, 202, 255, .44);
+      background: #efe9e0;
+      border-color: #cac0b3;
     }
     .app.sidebar-collapsed .sidebar-tools { padding: 12px 10px; }
     .app.sidebar-collapsed .sidebar-tool-text { display: none; }
-    .sidebar-footer { margin-top: auto; padding: 16px; border-top: 1px solid rgba(129, 179, 255, .14); }
+    .sidebar-footer { margin-top: auto; padding: 16px; border-top: 1px solid #e6dfd5; }
 
     .main { min-width: 0; }
     .topbar {
@@ -216,6 +215,20 @@
     .row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
     .row-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
     .hint-box { padding: 13px; border: 1px solid #c7d7fe; border-radius: 8px; background: var(--brand-soft); color: #344054; font-size: 13px; line-height: 1.65; }
+    .requirement-preview { display: grid; gap: 10px; }
+    .preview-group { padding: 12px; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
+    .preview-group h4 { margin: 0 0 8px; color: var(--ink); font-size: 13px; }
+    .check-list { display: grid; gap: 7px; margin: 0; padding: 0; list-style: none; }
+    .check-list li { display: grid; grid-template-columns: 18px 1fr; gap: 8px; align-items: start; color: #344054; font-size: 13px; line-height: 1.45; }
+    .check-list li::before { content: "✓"; width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; border-radius: 999px; color: #fff; background: var(--green); font-size: 11px; font-weight: 900; }
+    .check-list li.empty::before { content: "-"; color: #667085; background: var(--gray-soft); }
+    .modal-backdrop { position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; padding: 24px; background: rgba(15, 23, 42, .38); }
+    .modal-backdrop[hidden] { display: none; }
+    .modal { width: min(720px, 100%); max-height: min(760px, 88vh); overflow: auto; border: 1px solid var(--line); border-radius: 10px; background: #fff; box-shadow: 0 24px 70px rgba(15, 23, 42, .24); }
+    .modal-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding: 16px; border-bottom: 1px solid var(--line); background: #fbfaf7; }
+    .modal-head h3 { margin: 0 0 4px; color: var(--ink); font-size: 18px; }
+    .modal-head p { margin: 0; color: var(--muted); font-size: 13px; }
+    .modal-body { padding: 16px; }
 
     .progress { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; margin-bottom: 16px; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: #fff; }
     .step {
@@ -338,10 +351,10 @@
   <div class="app" id="appShell">
     <aside class="sidebar">
       <div class="brand">
-        <div class="brand-mark">HL</div>
+        <div class="brand-mark">LH</div>
         <div>
-          <h1>HireLens</h1>
-          <p>企业招聘岗位标准化与简历智能评测系统</p>
+          <h1>Lumy-HR</h1>
+          <p>AI 招聘评测工作台</p>
         </div>
       </div>
       <nav class="nav">
@@ -482,9 +495,10 @@
             </section>
 
             <aside class="panel">
-              <div class="panel-head"><div><h3>标准预览</h3><p>保存后会用于简历评测。</p></div></div>
+              <div class="panel-head"><div><h3>标准预览</h3><p>保存后会用于简历评测。</p></div><button class="small-btn" id="previewCurrentJob" type="button">打开预览</button></div>
               <div class="panel-body">
                 <div class="hint-box">建议每个硬性要求都写成可判断条件，例如“3 年以上 B2B 销售经验”“做过大客户开发”，避免“优秀沟通能力”这类不可验证描述。</div>
+                <div id="jobRequirementPreview" class="requirement-preview" style="margin-top:12px"></div>
               </div>
             </aside>
           </div>
@@ -655,6 +669,20 @@ created_at</pre></div>
       </div>
     </main>
   </div>
+  <div class="modal-backdrop" id="requirementModal" hidden>
+    <section class="modal" role="dialog" aria-modal="true" aria-labelledby="requirementModalTitle">
+      <div class="modal-head">
+        <div>
+          <h3 id="requirementModalTitle">岗位需求清单</h3>
+          <p id="requirementModalSub">用于简历评测前的标准确认。</p>
+        </div>
+        <button class="small-btn" id="closeRequirementModal" type="button">关闭</button>
+      </div>
+      <div class="modal-body">
+        <div id="requirementModalBody" class="requirement-preview"></div>
+      </div>
+    </section>
+  </div>
 
   <script>
     const $ = (id) => document.getElementById(id);
@@ -702,6 +730,40 @@ created_at</pre></div>
     function personaText(job) {
       const p = job.persona || {};
       return `年龄：${p.ageRange || "不限"}；性别：${p.gender || "不限"}；工作时间：${p.workYears || "未设置"}；最低学历：${p.education || "不限"}；跳槽频率：${p.jobHopFreq || "未设置"}；关键词：${p.keywords || "未设置"}`;
+    }
+    function previewItems(title, values) {
+      const items = values.filter(Boolean);
+      const body = items.length
+        ? items.map((value) => `<li>${escapeHtml(value)}</li>`).join("")
+        : `<li class="empty">未设置</li>`;
+      return `<section class="preview-group"><h4>${escapeHtml(title)}</h4><ul class="check-list">${body}</ul></section>`;
+    }
+    function requirementPreviewHtml(job) {
+      const p = job?.persona || {};
+      const persona = [
+        `年龄：${p.ageRange || "不限"}`,
+        `性别：${p.gender || "不限"}`,
+        `工作时间：${p.workYears || "未设置"}`,
+        `最低学历：${p.education || "不限"}`,
+        `跳槽频率：${p.jobHopFreq || "未设置"}`,
+        `画像关键词：${p.keywords || "未设置"}`
+      ];
+      return [
+        previewItems("人才画像", persona),
+        previewItems("硬性要求", allRequirementLines(job || {})),
+        previewItems("加分项", allBonusLines(job || {}))
+      ].join("");
+    }
+    function renderRequirementPreview() {
+      const target = $("jobRequirementPreview");
+      if (target) target.innerHTML = requirementPreviewHtml(collectJobForm());
+    }
+    function openRequirementPreview(job) {
+      const data = job || collectJobForm();
+      $("requirementModalTitle").textContent = `${data.name || "未命名岗位"} · 需求清单`;
+      $("requirementModalSub").textContent = "按人才画像、硬性要求、加分项逐条确认。";
+      $("requirementModalBody").innerHTML = requirementPreviewHtml(data);
+      $("requirementModal").hidden = false;
     }
     function tokens(text) {
       return Array.from(new Set(String(text || "").replace(/[，。、《》：:（）()]/g, " ").split(/\s+|、|\/|,|\./).map((item) => item.trim()).filter((item) => item.length >= 2)));
@@ -758,6 +820,7 @@ created_at</pre></div>
       $("mustYears").value = m.years || ""; $("mustIndustry").value = m.industry || ""; $("mustSkills").value = m.skills || ""; $("mustCert").value = m.cert || ""; $("mustHave").value = m.other || "";
       $("bonusResources").value = b.resources || ""; $("bonusTools").value = b.tools || ""; $("bonusLanguage").value = b.language || ""; $("bonusManagement").value = b.management || ""; $("niceHave").value = b.other || "";
       $("jobFormTitle").textContent = job ? "编辑岗位" : "新建岗位";
+      renderRequirementPreview();
     }
     function saveJob() {
       const job = collectJobForm();
@@ -777,7 +840,7 @@ created_at</pre></div>
       const runningCount = state.jobs.filter((job) => job.status === "在进行").length;
       $("metricJobs").textContent = state.jobs.length; $("metricRunning").textContent = runningCount; $("metricHeadcount").textContent = state.jobs.reduce((sum, job) => sum + Number(job.headcount || 0), 0); $("metricResults").textContent = state.results.length; $("runningLabel").textContent = runningCount + " 个进行中";
       $("jobEmpty").style.display = state.jobs.length ? "none" : "block"; $("jobTableWrap").style.display = state.jobs.length ? "block" : "none";
-      $("jobTable").innerHTML = state.jobs.map((job) => `<tr><td><strong>${escapeHtml(job.name)}</strong></td><td>${job.headcount || 1}</td><td>${escapeHtml(job.arrivalDate || "未设置")}</td><td><span class="pill ${statusClass(job.status)}">${escapeHtml(job.status)}</span></td><td><span class="text-clip">${escapeHtml(personaText(job))}</span></td><td><span class="text-clip">${escapeHtml(allRequirementLines(job).join("；"))}</span></td><td><button class="small-btn" data-edit-job="${job.id}" type="button">编辑</button> <button class="small-btn" data-delete-job="${job.id}" type="button">删除</button></td></tr>`).join("");
+      $("jobTable").innerHTML = state.jobs.map((job) => `<tr><td><strong>${escapeHtml(job.name)}</strong></td><td>${job.headcount || 1}</td><td>${escapeHtml(job.arrivalDate || "未设置")}</td><td><span class="pill ${statusClass(job.status)}">${escapeHtml(job.status)}</span></td><td><span class="text-clip">${escapeHtml(personaText(job))}</span></td><td><span class="text-clip">${escapeHtml(allRequirementLines(job).join("；"))}</span></td><td><button class="small-btn" data-preview-job="${job.id}" type="button">预览</button> <button class="small-btn" data-edit-job="${job.id}" type="button">编辑</button> <button class="small-btn" data-delete-job="${job.id}" type="button">删除</button></td></tr>`).join("");
     }
     function renderJobOptions() {
       const running = state.jobs.filter((job) => job.status === "在进行");
@@ -939,7 +1002,7 @@ created_at</pre></div>
         });
       });
     }
-    function renderAll() { renderJobs(); renderJobOptions(); renderPendingResumes(); renderResults(); updateConfirmBox(); makeTablesResizable(); }
+    function renderAll() { renderJobs(); renderJobOptions(); renderPendingResumes(); renderResults(); updateConfirmBox(); renderRequirementPreview(); makeTablesResizable(); }
 
     const ORG_ID = "1223fd31-7c98-4f07-a497-e9327aac7cbb";
     const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -1127,8 +1190,8 @@ created_at</pre></div>
           const sourceResume = resumes[index] || {};
           return resultToViewModel({
             ...row,
-            jobs: { title: job.name },
-            resumes: { candidate_name: sourceResume.candidateName, file_name: sourceResume.resumeName }
+            jobs: row.jobs || { title: job.name },
+            resumes: row.resumes || { candidate_name: sourceResume.candidateName, file_name: sourceResume.resumeName }
           });
         });
         pendingResumes = []; $("resumeFiles").value = ""; $("resumeText").value = ""; $("candidateName").value = ""; $("resumeLabel").value = ""; $("fileName").textContent = "选择本地简历文件";
@@ -1218,6 +1281,13 @@ created_at</pre></div>
         : "<span>⇤</span><span class=\"sidebar-tool-text\">收起导航</span>";
     });
     $("createJobBtn").addEventListener("click", () => { fillJobForm(null); setPage("jobEditPage"); });
+    $("previewCurrentJob").addEventListener("click", () => openRequirementPreview(collectJobForm()));
+    $("closeRequirementModal").addEventListener("click", () => { $("requirementModal").hidden = true; });
+    $("requirementModal").addEventListener("click", (event) => { if (event.target.id === "requirementModal") $("requirementModal").hidden = true; });
+    ["jobName", "ageRange", "gender", "workYears", "education", "jobHopFreq", "personaKeywords", "mustYears", "mustIndustry", "mustSkills", "mustCert", "mustHave", "bonusResources", "bonusTools", "bonusLanguage", "bonusManagement", "niceHave"].forEach((id) => {
+      $(id).addEventListener("input", renderRequirementPreview);
+      $(id).addEventListener("change", renderRequirementPreview);
+    });
     $("saveJob").addEventListener("click", saveJob);
     $("loadDemo").addEventListener("click", () => { if (!state.jobs.length || confirm("载入示例会追加两个岗位，是否继续？")) { state.jobs.unshift(...demoJobs.map((job) => ({ ...job, id: makeId("job") }))); saveState(); } });
     $("resetData").addEventListener("click", () => { if (!confirm("确认清空所有岗位和评测结果？")) return; state.jobs = []; state.results = []; pendingResumes = []; latestResults = []; localStorage.removeItem(storeKey); fillJobForm(null); saveState(); });
@@ -1229,7 +1299,8 @@ created_at</pre></div>
     $("clearResume").addEventListener("click", () => { pendingResumes = []; $("resumeFiles").value = ""; $("resumeText").value = ""; $("candidateName").value = ""; $("resumeLabel").value = ""; $("fileName").textContent = "选择本地文本简历文件"; renderPendingResumes(); updateConfirmBox(); });
     $("resultKeyword").addEventListener("input", renderResults); $("resultConclusion").addEventListener("change", renderResults); $("resultJob").addEventListener("change", renderResults); $("exportResults").addEventListener("click", exportResults);
     document.addEventListener("click", async (event) => {
-      const editJobId = event.target.dataset.editJob, deleteJobId = event.target.dataset.deleteJob, removeResumeIndex = event.target.dataset.removeResume, viewResultId = event.target.dataset.viewResult, deleteResultId = event.target.dataset.deleteResult;
+      const previewJobId = event.target.dataset.previewJob, editJobId = event.target.dataset.editJob, deleteJobId = event.target.dataset.deleteJob, removeResumeIndex = event.target.dataset.removeResume, viewResultId = event.target.dataset.viewResult, deleteResultId = event.target.dataset.deleteResult;
+      if (previewJobId) { const job = state.jobs.find((item) => item.id === previewJobId); if (job) openRequirementPreview(job); }
       if (editJobId) { const job = state.jobs.find((item) => item.id === editJobId); if (job) fillJobForm(job); setPage("jobEditPage"); window.scrollTo({ top: 0, behavior: "smooth" }); }
       if (deleteJobId) deleteJob(deleteJobId);
       if (removeResumeIndex !== undefined) { pendingResumes.splice(Number(removeResumeIndex), 1); renderPendingResumes(); updateConfirmBox(); }

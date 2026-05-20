@@ -149,7 +149,7 @@ def image_to_text(file_name: str, file_base64: str, mime_type: str, skill: dict[
     payload = {
         "model": model,
         "temperature": 0,
-        "max_tokens": int(env("RESUME_SCREENER_VISION_MAX_TOKENS", "1200")),
+        "max_tokens": int(env("RESUME_SCREENER_VISION_MAX_TOKENS", "3000")),
         "messages": [
             {
                 "role": "user",
@@ -157,10 +157,12 @@ def image_to_text(file_name: str, file_base64: str, mime_type: str, skill: dict[
                     {
                         "type": "text",
                         "text": (
-                            "你是简历图片 OCR 助手。请只抽取招聘初筛需要的关键信息，不要逐字完整转写。"
-                            "输出纯文本，控制在 1500 字以内，按以下字段组织：候选人姓名、当前/最近岗位、工作年限、教育经历、"
-                            "核心经历、项目/业绩、技能工具、行业经验、证书语言、稳定性线索、其他可评测信息。"
-                            "如果图片中某项看不清，写“不清晰”。不要评价候选人，不要输出 Markdown 表格。"
+                            "你是简历图片 OCR 助手。请尽可能完整转写图片中的简历文字，并保持原有栏目顺序。"
+                            "必须覆盖候选人姓名、联系方式、求职意向、工作经历、项目经历、教育经历、技能工具、证书语言、"
+                            "自我评价和其他可见内容；看不清的局部写“不清晰”。"
+                            "如果图片中存在候选人照片，只能记录“检测到候选人照片/未检测到候选人照片/照片不清晰”，"
+                            "不得评价长相、面相、年龄外观、颜值、气质或性格，也不得做招聘判断。"
+                            "只输出纯文本，不要输出 Markdown 表格。"
                         ),
                     },
                     {"type": "image_url", "image_url": {"url": f"data:{mime_type or 'image/png'};base64,{file_base64}"}},
@@ -199,6 +201,32 @@ def normalize_resume_text(file_name: str, raw_text: str, file_base64: str = "", 
     if lower.endswith((".html", ".htm")) or re.search(r"(?is)<html|<!doctype html|<body|<div|<p", raw_text[:2000]):
         return clean_text_value(html_to_text(raw_text))
     return clean_text_value(raw_text.strip())
+
+
+def extract_candidate_name(parsed_text: str, fallback: str = "") -> str:
+    fallback = str(fallback or "").strip()
+    text = clean_text_value(parsed_text or "")
+    patterns = [
+        r"(?:姓名|候选人|名字|Name)\s*[:：]\s*([A-Za-z\u4e00-\u9fff][A-Za-z\u4e00-\u9fff·\s]{1,18})",
+        r"(?:个人简历|求职简历)\s*[:：]?\s*([A-Za-z\u4e00-\u9fff][A-Za-z\u4e00-\u9fff·\s]{1,18})",
+    ]
+    stop_words = {"个人简历", "求职简历", "简历", "应聘", "姓名", "无姓名", "电话", "手机", "邮箱", "工作经历", "教育经历", "项目经历"}
+    for pattern in patterns:
+        match = re.search(pattern, text, re.I)
+        if match:
+            name = re.split(r"(?:手机|电话|邮箱|性别|年龄|求职|应聘|工作|教育)", match.group(1))[0]
+            name = re.sub(r"\s+", "", name).strip("，,；;。.|/ ")
+            if 2 <= len(name) <= 12 and name not in stop_words:
+                return name
+    for line in text.splitlines()[:12]:
+        value = re.sub(r"\s+", "", line).strip("，,；;。.|/ ")
+        if any(word in value for word in stop_words):
+            continue
+        if 2 <= len(value) <= 8 and re.fullmatch(r"[\u4e00-\u9fff·]{2,8}|[A-Za-z][A-Za-z\s]{2,18}", value) and value not in stop_words:
+            return value
+    if fallback and not re.search(r"(file_|boss|resume|\d{8,}|未命名)", fallback, re.I):
+        return fallback
+    return fallback or "未命名候选人"
 
 
 def get_job_bundle(job_id: str) -> dict[str, Any]:
@@ -247,6 +275,7 @@ def call_deepseek(job: dict[str, Any], resume: dict[str, Any], skill: Any = None
                     "必须逐条检查岗位硬性要求、人才画像、加分项，并引用简历中的具体证据或说明缺失原因。"
                     "只基于输入信息判断，不要虚构；没有证据时必须写“不明确”或“未体现”。"
                     "年龄、性别、婚育、民族、宗教、健康状况等敏感信息不得影响 conclusion 和 score，只能作为人工复核风险提示。"
+                    "不得基于候选人照片、面相、颜值、年龄外观、气质或任何外貌信息推断能力、性格、稳定性或岗位适配度。"
                     "评分规则：硬性要求占 60%，JD 职责匹配占 20%，加分项占 10%，风险扣分占 10%。"
                     "如果关键硬性要求缺失 2 项及以上，不能给“非常匹配”。如果核心硬性要求完全不明确，优先给“不匹配”。"
                     "必须遵循本次传入的 screening_skill 来调整检查重点、扣分严格度和追问方向。"

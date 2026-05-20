@@ -1,6 +1,6 @@
-# HireLens Resume Screener
+# Lumy-HR Resume Screener
 
-HireLens is a resume screening SaaS prototype for recruiting teams.
+Lumy-HR is a resume screening SaaS for recruiting teams.
 
 It supports:
 
@@ -65,7 +65,7 @@ RESUME_SCREENER_LLM_API_KEY=your-deepseek-api-key
 RESUME_SCREENER_LLM_TIMEOUT=60
 RESUME_SCREENER_VISION_TIMEOUT=90
 RESUME_SCREENER_VISION_MAX_IMAGE_BYTES=358400
-RESUME_SCREENER_VISION_MAX_TOKENS=1200
+RESUME_SCREENER_VISION_MAX_TOKENS=3000
 
 # Optional: use an OpenAI-compatible vision API to extract text from image resumes
 RESUME_SCREENER_VISION_BASE_URL=https://api.openai.com/v1

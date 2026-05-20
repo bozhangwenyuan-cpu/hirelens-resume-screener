@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 
 from ._utils import (
     call_deepseek,
+    extract_candidate_name,
     get_job_bundle,
     json_response,
     normalize_resume_text,
@@ -55,12 +56,16 @@ class handler(BaseHTTPRequestHandler):
                     item.get("mime_type") or item.get("mimeType") or "",
                     screening_skill,
                 )
+                candidate_name = extract_candidate_name(
+                    parsed_text,
+                    item.get("candidate_name") or item.get("candidateName") or "",
+                )
                 resume_rows = supabase_request(
                     "POST",
                     "resumes",
                     {
                         "organization_id": organization_id,
-                        "candidate_name": item.get("candidate_name") or item.get("candidateName") or "未命名候选人",
+                        "candidate_name": candidate_name,
                         "file_name": file_name,
                         "file_url": item.get("file_url"),
                         "parsed_text": parsed_text,
@@ -90,7 +95,10 @@ class handler(BaseHTTPRequestHandler):
                     },
                     prefer="return=representation",
                 )
-                results.append(result_rows[0])
+                result = result_rows[0]
+                result["jobs"] = {"title": job.get("title")}
+                result["resumes"] = {"candidate_name": resume.get("candidate_name"), "file_name": resume.get("file_name")}
+                results.append(result)
 
             supabase_request(
                 "PATCH",
