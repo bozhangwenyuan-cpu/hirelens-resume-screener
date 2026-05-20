@@ -63,6 +63,11 @@ RESUME_SCREENER_LLM_BASE_URL=https://api.deepseek.com
 RESUME_SCREENER_MODEL=deepseek-v4-flash
 RESUME_SCREENER_LLM_API_KEY=your-deepseek-api-key
 RESUME_SCREENER_LLM_TIMEOUT=60
+
+# Optional: use GPT vision to extract text from image resumes
+RESUME_SCREENER_VISION_BASE_URL=https://api.openai.com/v1
+RESUME_SCREENER_VISION_MODEL=gpt-4.1-mini
+RESUME_SCREENER_VISION_API_KEY=your-openai-api-key
 ```
 
 Never commit real API keys.
@@ -131,4 +136,3 @@ This repository now contains two paths:
 
 - `api/` + `supabase/`: online SaaS direction for Vercel + Supabase + DeepSeek
 - `resume_screener_backend/`: local Python + SQLite demo backend
-

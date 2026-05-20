@@ -28,5 +28,6 @@ class handler(BaseHTTPRequestHandler):
                 "supabase_configured": bool(os.environ.get("SUPABASE_URL") and os.environ.get("SUPABASE_SERVICE_ROLE_KEY")),
                 "llm_configured": bool(os.environ.get("RESUME_SCREENER_LLM_API_KEY")),
                 "vision_model_configured": bool(os.environ.get("RESUME_SCREENER_VISION_MODEL")),
+                "vision_api_configured": bool(os.environ.get("RESUME_SCREENER_VISION_API_KEY") or os.environ.get("OPENAI_API_KEY")),
             },
         )
