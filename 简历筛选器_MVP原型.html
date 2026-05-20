@@ -365,6 +365,119 @@
       font-size: 13px;
       line-height: 1.6;
     }
+
+    /* Calm product shell: closer to Codex/Claude density and contrast. */
+    :root {
+      --bg: #fbfaf7;
+      --surface: #fffdf9;
+      --subtle: #fbfaf7;
+      --ink: #1f2933;
+      --text: #3f454d;
+      --muted: #7a818c;
+      --line: #ece7df;
+      --line2: #ddd6cb;
+      --brand: #4f463d;
+      --brand-dark: #383129;
+      --brand-soft: #f2ece4;
+      --gray-soft: #f1f0ed;
+      --radius: 10px;
+      --sidebar: 216px;
+    }
+    body { background: var(--bg); color: var(--text); font-size: 14px; }
+    .app.sidebar-collapsed { grid-template-columns: 64px minmax(0, 1fr); }
+    .main { background: var(--bg); }
+    .sidebar { background: #f5f2ec; border-right-color: #ebe4da; }
+    .brand { padding: 18px 16px 14px; border-bottom: 0; }
+    .brand-mark { width: 32px; height: 32px; margin-bottom: 10px; border-radius: 9px; background: #2f2b26; font-size: 14px; }
+    .brand h1 { font-size: 18px; letter-spacing: 0; }
+    .brand p { max-width: 150px; color: #8b8378; font-size: 12px; line-height: 1.45; }
+    .nav { padding: 8px; gap: 2px; }
+    .nav-btn {
+      min-height: 42px; grid-template-columns: 26px 1fr; gap: 8px;
+      padding: 7px 9px; border-radius: 9px; color: #5f574f;
+    }
+    .nav-btn .icon { width: 24px; height: 24px; color: #8b8378; font-size: 13px; }
+    .nav-btn strong { font-size: 13px; font-weight: 750; }
+    .nav-btn span span { color: #9a9288; font-size: 11px; }
+    .nav-btn.active { border-color: transparent; background: #e9e3da; color: #2f2b26; }
+    .nav-btn.active .icon { background: transparent; color: #2f2b26; }
+    .nav-btn:hover { background: #eee8df; }
+    .sidebar-tools { margin-top: auto; padding: 10px 8px; border-top: 1px solid #ebe4da; border-bottom: 0; }
+    .sidebar-tool-btn { height: 34px; border-color: #e2dace; background: transparent; color: #6f675e; font-size: 12px; }
+    .app.sidebar-collapsed .brand { padding: 16px; }
+    .app.sidebar-collapsed .nav { padding: 8px 6px; }
+    .app.sidebar-collapsed .nav-btn { min-height: 42px; padding: 7px 0; border-radius: 10px; }
+    .app.sidebar-collapsed .nav-btn.active { background: #e9e3da; }
+    .app.sidebar-collapsed .sidebar-tools { padding: 10px 8px; }
+
+    .topbar {
+      height: 58px; padding: 0 32px; border-bottom-color: #eee9e1;
+      background: rgba(251,250,247,.86); backdrop-filter: blur(16px);
+    }
+    .crumb { color: #8a919b; font-size: 13px; }
+    .crumb strong { color: #323842; font-size: 14px; font-weight: 750; }
+    .content { width: min(1180px, 100%); margin: 0 auto; padding: 30px 32px 56px; }
+    .page-head { align-items: center; margin-bottom: 22px; }
+    .page-title h2 { margin-bottom: 8px; font-size: 25px; font-weight: 760; letter-spacing: 0; }
+    .page-title p { max-width: 680px; color: #707782; line-height: 1.7; font-size: 14px; }
+
+    .btn {
+      height: 36px; padding: 0 14px; border-radius: 9px;
+      font-size: 13px; font-weight: 750; box-shadow: none;
+    }
+    .btn.secondary, .small-btn { border-color: #e0d9cf; background: #fffdf9; color: #4d5661; }
+    .btn.ghost { border-color: #e3dbd0; background: #f5efe7; color: #4f463d; }
+    .small-btn { min-height: 32px; padding: 5px 10px; border-radius: 8px; font-weight: 700; }
+
+    .metric-strip { gap: 10px; margin-bottom: 22px; }
+    .metric {
+      min-height: 74px; padding: 14px 16px; border-color: #eee8df;
+      border-radius: 12px; background: rgba(255,253,249,.76);
+    }
+    .metric span { color: #7d8590; font-size: 12px; font-weight: 650; }
+    .metric strong { font-size: 28px; font-weight: 760; letter-spacing: 0; }
+
+    .panel {
+      border-color: #eee8df; border-radius: 13px;
+      background: rgba(255,253,249,.82); overflow: hidden;
+    }
+    .panel-head { min-height: 54px; padding: 16px 18px; border-bottom-color: #eee8df; background: transparent; }
+    .panel-head h3 { font-size: 16px; font-weight: 760; }
+    .panel-head p { color: #767d87; font-size: 13px; }
+    .panel-body { padding: 18px; }
+
+    .table-shell { border-color: #eee8df; border-radius: 13px; background: #fffdf9; }
+    .table-toolbar { min-height: 52px; padding: 12px 16px; border-bottom-color: #eee8df; background: transparent; }
+    .table-wrap { overflow-x: visible; }
+    table { width: 100%; min-width: 0; table-layout: fixed; border-collapse: collapse; }
+    th, td { padding: 14px 16px; border-bottom-color: #f0ebe4; font-size: 13px; line-height: 1.55; }
+    th { min-width: 0; max-width: none; color: #7b838e; background: #fbfaf7; font-weight: 720; }
+    tr:hover td { background: #fffaf2; }
+    .col-resizer { display: none; }
+    .text-clip { max-width: none; overflow-wrap: anywhere; }
+
+    .pill { min-height: 22px; padding: 3px 8px; font-size: 11px; font-weight: 750; }
+    input, select, textarea { border-color: #ded7cc; border-radius: 9px; background: #fffdf9; }
+    input, select { height: 38px; }
+    textarea { line-height: 1.62; }
+    input:focus, select:focus, textarea:focus { border-color: #b7aa9a; box-shadow: 0 0 0 3px rgba(91,75,59,.08); }
+    label { color: #3f4752; font-weight: 720; }
+    .hint-box { border-color: #e5ddd2; background: #f8f3eb; color: #4b5563; }
+    .empty { border-color: #e8e2d8; background: #fffdf9; color: #838a94; }
+
+    .skill-card, .preview-group, .schema-card, .resume-card, .detail-item {
+      border-color: #eee8df; background: #fffdf9; border-radius: 11px;
+    }
+    .skill-card { padding: 16px; }
+    .skill-instruction { border-color: #eee8df; background: #fbfaf7; color: #4f5964; }
+    .review-panel, .live-card { border-color: #eee8df; border-radius: 13px; background: #fffdf9; }
+    .review-head, .live-card-head { border-bottom-color: #eee8df; background: transparent; padding: 16px 18px; }
+    .analysis-row, .live-step { border-bottom-color: #f0ebe4; }
+    .analysis-label { font-weight: 720; }
+    .progress { border-color: #eee8df; border-radius: 12px; background: #fffdf9; }
+    .step { min-height: 68px; border-right-color: #eee8df; }
+    .step.active { background: #f8f3eb; }
+    .upload { border-color: #ded7cc; background: #fffdf9; }
   </style>
 </head>
 <body>
