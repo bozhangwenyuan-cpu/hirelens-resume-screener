@@ -284,6 +284,7 @@
     .live-step.running .live-dot { background: var(--brand); animation: pulse 1s infinite alternate; }
     .live-step.done .live-dot { background: var(--green); }
     .live-step.error .live-dot { background: var(--red); }
+    .live-step.skipped .live-dot { background: #94a3b8; }
     .live-step strong { display: block; color: var(--ink); font-size: 14px; }
     .live-step span { display: block; margin-top: 3px; color: var(--muted); font-size: 13px; line-height: 1.45; }
     @keyframes pulse { from { opacity: .65; transform: scale(.96); } to { opacity: 1; transform: scale(1.04); } }
@@ -1051,6 +1052,7 @@ created_at</pre></div>
       try {
         await updateLiveStep("parse", "running", "正在解析文件", "正在识别 PDF、HTML、图片或文本简历，并清洗不可见字符。");
         await delay(450);
+        await updateLiveStep("parse", "done", "文件解析已完成", "上传材料已进入解析队列，后端将抽取可评测文本。");
         await updateLiveStep("standard", "running", "正在加载岗位标准", "正在读取 JD、人才画像、硬性要求、加分项和评测 Skill。");
         await delay(450);
         await updateLiveStep("standard", "done", "岗位标准已加载", `已应用 Skill：${screeningSkill.name}`);
@@ -1088,7 +1090,7 @@ created_at</pre></div>
         setScreenStep(1);
       } catch (error) {
         console.error(error);
-        await updateLiveStep("model", "error", "评测失败", error.message);
+        markLiveFailure(error.message);
         updateConfirmBox();
       }
     }
@@ -1104,10 +1106,39 @@ created_at</pre></div>
     async function updateLiveStep(id, status, title, detail) {
       const row = document.querySelector(`[data-live-step="${id}"]`);
       if (!row) return;
+      if (status === "running") completePreviousLiveSteps(id);
       row.className = `live-step ${status}`;
       row.querySelector("strong").textContent = title;
       row.querySelector("span:last-child").textContent = detail;
       await delay(60);
+    }
+    function completePreviousLiveSteps(activeId) {
+      const order = ["parse", "standard", "model", "persist"];
+      const activeIndex = order.indexOf(activeId);
+      order.slice(0, activeIndex).forEach((id) => {
+        const row = document.querySelector(`[data-live-step="${id}"]`);
+        if (row && row.classList.contains("running")) row.className = "live-step done";
+      });
+    }
+    function markLiveFailure(message) {
+      const order = ["parse", "standard", "model", "persist"];
+      const rows = order.map((id) => document.querySelector(`[data-live-step="${id}"]`));
+      const activeIndex = rows.findIndex((row) => row?.classList.contains("running"));
+      const failIndex = activeIndex >= 0 ? activeIndex : order.findIndex((id) => id === "model");
+      rows.forEach((row, index) => {
+        if (!row) return;
+        if (index < failIndex && !row.classList.contains("done")) row.className = "live-step done";
+        if (index === failIndex) {
+          row.className = "live-step error";
+          row.querySelector("strong").textContent = "评测失败";
+          row.querySelector("span:last-child").textContent = message;
+        }
+        if (index > failIndex) {
+          row.className = "live-step skipped";
+          row.querySelector("strong").textContent = "未执行";
+          row.querySelector("span:last-child").textContent = "前序步骤失败，本步骤已停止。";
+        }
+      });
     }
     function delay(ms) { return new Promise((resolve) => setTimeout(resolve, ms)); }
     function resultBlock(item) {
