@@ -140,6 +140,10 @@ def image_to_text(file_name: str, file_base64: str, mime_type: str, skill: dict[
     model = env("RESUME_SCREENER_VISION_MODEL", "").strip()
     if not model:
         raise RuntimeError(f"{file_name} 是图片文件。当前部署尚未配置图片解析模型 RESUME_SCREENER_VISION_MODEL，请配置支持图片识别的视觉模型，或先上传 PDF/HTML/文本简历。")
+    image_bytes = int(len(file_base64) * 0.75)
+    max_image_bytes = int(env("RESUME_SCREENER_VISION_MAX_IMAGE_BYTES", str(350 * 1024)))
+    if image_bytes > max_image_bytes:
+        raise RuntimeError(f"{file_name} 图片压缩后仍有 {round(image_bytes / 1024)}KB，超过当前限制 {round(max_image_bytes / 1024)}KB。请截图更小区域，或上传 HTML/PDF 简历。")
 
     base_url = env("RESUME_SCREENER_VISION_BASE_URL", "https://api.openai.com/v1").rstrip("/")
     payload = {

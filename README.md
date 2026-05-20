@@ -64,6 +64,7 @@ RESUME_SCREENER_MODEL=deepseek-v4-flash
 RESUME_SCREENER_LLM_API_KEY=your-deepseek-api-key
 RESUME_SCREENER_LLM_TIMEOUT=60
 RESUME_SCREENER_VISION_TIMEOUT=90
+RESUME_SCREENER_VISION_MAX_IMAGE_BYTES=358400
 
 # Optional: use an OpenAI-compatible vision API to extract text from image resumes
 RESUME_SCREENER_VISION_BASE_URL=https://api.openai.com/v1
