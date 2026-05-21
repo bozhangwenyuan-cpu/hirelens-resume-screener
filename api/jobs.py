@@ -70,8 +70,9 @@ class handler(BaseHTTPRequestHandler):
                 },
                 query={"job_id": f"eq.{job_id}"},
             )
+            requirements = self._clean_requirements(payload.get("requirements") or [])
             supabase_request("DELETE", "job_requirements", query={"job_id": f"eq.{job_id}"})
-            self._insert_requirements(job_id, payload.get("requirements") or [])
+            self._insert_requirements(job_id, requirements)
             json_response(self, job)
         except Exception as exc:
             json_response(self, {"error": str(exc)}, status=400)
@@ -111,7 +112,7 @@ class handler(BaseHTTPRequestHandler):
                 },
                 prefer="return=representation",
             )
-            self._insert_requirements(job["id"], payload.get("requirements") or [])
+            self._insert_requirements(job["id"], self._clean_requirements(payload.get("requirements") or []))
             json_response(self, job, status=201)
         except Exception as exc:
             json_response(self, {"error": str(exc)}, status=400)
@@ -152,3 +153,15 @@ class handler(BaseHTTPRequestHandler):
                 }
             )
         supabase_request("POST", "job_requirements", rows, prefer="return=representation")
+
+    def _clean_requirements(self, requirements: list[dict]) -> list[dict]:
+        cleaned = []
+        for req in requirements:
+            req_type = req.get("type")
+            field_value = req.get("field_value") or req.get("value") or ""
+            if req_type not in {"must", "bonus"}:
+                continue
+            if not str(field_value).strip():
+                continue
+            cleaned.append(req)
+        return cleaned
