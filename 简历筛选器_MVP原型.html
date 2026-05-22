@@ -284,6 +284,20 @@
     .analysis-label.warn { color: #92400e; background: #fef3c7; }
     .analysis-label.fail { color: #b42318; background: #fee4e2; }
     .analysis-label.ask { color: #1d4ed8; background: #dbeafe; }
+    .score-explain { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 14px; }
+    .score-explain span { padding: 8px; border: 1px solid var(--line); border-radius: 8px; background: #fbfcfd; color: #667085; font-size: 12px; line-height: 1.45; }
+    .weight-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; padding: 0 16px 14px; }
+    .weight-card { padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: #fff; }
+    .weight-card strong { display: block; color: var(--ink); font-size: 18px; line-height: 1; }
+    .weight-card span { display: block; margin-top: 6px; color: #667085; font-size: 12px; line-height: 1.45; }
+    .requirement-table { margin: 0 16px 16px; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+    .requirement-table table { min-width: 0; width: 100%; table-layout: fixed; }
+    .requirement-table th, .requirement-table td { padding: 11px 12px; vertical-align: top; }
+    .requirement-table th:nth-child(1) { width: 92px; }
+    .requirement-table th:nth-child(2) { width: 34%; }
+    .requirement-table th:nth-child(3) { width: 35%; }
+    .requirement-table th:nth-child(4) { width: 17%; }
+    .result-section-title { margin: 14px 16px 10px; color: var(--ink); font-size: 14px; font-weight: 800; }
     .live-analysis { display: grid; gap: 12px; }
     .live-card { border: 1px solid var(--line); border-radius: 8px; background: #fff; overflow: hidden; }
     .live-card-head { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 15px 16px; border-bottom: 1px solid var(--line); background: #fbfdff; }
@@ -1731,14 +1745,62 @@ created_at</pre></div>
       });
     }
     function delay(ms) { return new Promise((resolve) => setTimeout(resolve, ms)); }
+    function scoreLevel(score) {
+      if (score >= 85) return "优秀，建议优先面试";
+      if (score >= 70) return "合格，建议进入人工复核";
+      if (score >= 50) return "边界，建议只作备选";
+      return "不合格，建议淘汰或补充材料后复评";
+    }
+    function scoreFormula(item) {
+      return [
+        "0/1 一票否决：核心硬性项缺失则直接不通过",
+        "硬性要求 55%：经验、技能、学历、行业等必须项",
+        "JD 职责 25%：岗位职责与项目经历的直接相关性",
+        "加分项 10%：资源、工具、语言、协作等优先项",
+        "风险项 -10%：稳定性、证据不足、表述矛盾等扣分"
+      ];
+    }
+    function requirementRows(item) {
+      const rows = [];
+      const add = (status, type, text) => rows.push({ status, type, text: String(text || "") });
+      (item.matched || []).forEach((text) => add("pass", "已满足", text));
+      (item.missing || []).forEach((text) => add("fail", "缺失/不明确", text));
+      (item.risks || []).forEach((text) => add("warn", "风险", text));
+      if (!rows.length) add("warn", "待复核", "模型未返回逐条检查结果，建议重新评测或补充岗位要求。");
+      return rows;
+    }
+    function requirementTable(item) {
+      const rows = requirementRows(item).map((row) => `<tr><td><span class="analysis-label ${row.status}">${row.type}</span></td><td>${escapeHtml(extractRequirement(row.text))}</td><td>${escapeHtml(extractEvidence(row.text))}</td><td>${escapeHtml(extractDecision(row.text))}</td></tr>`).join("");
+      return `<div class="requirement-table"><table><thead><tr><th>状态</th><th>岗位要求</th><th>简历证据/缺口</th><th>结论</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+    }
+    function extractRequirement(text) {
+      const value = String(text || "");
+      const match = value.match(/要求[：:]['"]?([^'"}，；;]+)/);
+      return match ? match[1].trim() : value.split(/[；;]/)[0].replace(/^(硬性要求匹配|加分项匹配|硬性要求不明确|加分项未体现|风险)[：:]/, "").trim();
+    }
+    function extractEvidence(text) {
+      const value = String(text || "");
+      const evidence = value.match(/证据[：:]([^；;}]+)/);
+      const reason = value.match(/(?:缺失原因|原因)[：:]([^；;}]+)/);
+      return (evidence || reason)?.[1]?.trim() || value;
+    }
+    function extractDecision(text) {
+      const value = String(text || "");
+      const decision = value.match(/(?:判断|影响|建议核实方式)[：:]([^；;}]+)/);
+      return decision?.[1]?.trim() || "需人工复核";
+    }
     function resultBlock(item) {
+      const scoreNotes = scoreFormula(item).map((text) => `<span>${escapeHtml(text)}</span>`).join("");
+      const weights = [
+        ["0/1", "一票否决项", "核心必备能力、硬性门槛。缺任一关键项直接不通过。"],
+        ["55%", "硬性要求", "必须项逐条看证据，缺失越多分数越低。"],
+        ["25%", "JD 匹配", "职责、项目场景、技术/业务相关性。"],
+        ["10%-", "加分与风险", "加分项提升排序，风险项扣分并进入追问。"]
+      ].map((item) => `<div class="weight-card"><strong>${item[0]}</strong><span>${item[1]}</span><span>${item[2]}</span></div>`).join("");
       const rows = [
-        ...analysisRows("pass", "已满足", item.matched.length ? item.matched : ["未识别到明确满足项"]),
-        ...analysisRows("fail", "缺失项", item.missing.length ? item.missing : ["暂无明显缺失项"]),
-        ...analysisRows("warn", "风险", item.risks.length ? item.risks : ["暂无明显风险信号，建议人工复核关键经历。"]),
         ...analysisRows("ask", "追问", item.questions.length ? item.questions : ["请候选人说明最能代表岗位能力的项目经历。"])
       ].join("");
-      return `<div class="result-review" style="margin-bottom:16px"><section class="review-panel"><div class="review-head"><div><span class="pill ${conclusionClass(item.conclusion)}">${escapeHtml(item.conclusion)}</span><h3>${escapeHtml(item.candidateName)}</h3><p>${escapeHtml(item.jobName)} · ${escapeHtml(item.resumeName)}</p></div><div class="review-score"><strong>${item.score}</strong><span>综合分</span></div></div>${item.summary ? `<div class="ai-status" style="margin:12px 16px">${escapeHtml(item.summary)}</div>` : ""}<div class="analysis-list">${rows}</div></section></div>`;
+      return `<div class="result-review" style="margin-bottom:16px"><section class="review-panel"><div class="review-head"><div><span class="pill ${conclusionClass(item.conclusion)}">${escapeHtml(item.conclusion)}</span><h3>${escapeHtml(item.candidateName)}</h3><p>${escapeHtml(item.jobName)} · ${escapeHtml(item.resumeName)}</p></div><div class="review-score"><strong>${item.score}</strong><span>${escapeHtml(scoreLevel(Number(item.score || 0)))}</span></div></div><div class="score-explain" style="padding:0 16px 14px">${scoreNotes}</div>${item.summary ? `<div class="ai-status" style="margin:0 16px 14px">${escapeHtml(item.summary)}</div>` : ""}<h4 class="result-section-title">评分模型与权重</h4><div class="weight-grid">${weights}</div><h4 class="result-section-title">逐条要求检查</h4>${requirementTable(item)}<h4 class="result-section-title">建议追问</h4><div class="analysis-list">${rows}</div></section></div>`;
     }
     function analysisRows(type, label, items) {
       return items.map((text) => `<div class="analysis-row"><span class="analysis-label ${type}">${label}</span><p>${escapeHtml(text)}</p></div>`);
